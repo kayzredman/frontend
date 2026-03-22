@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useEffect, useState } from "react";
@@ -16,12 +17,11 @@ interface Post {
   updatedAt: string;
 }
 
-
+export default function PostsPage() {
   const { isLoaded, isSignedIn, user } = useUser();
   const [posts, setPosts] = useState<Post[]>([]);
   const [content, setContent] = useState("");
   const [loading, setLoading] = useState(false);
-
 
   useEffect(() => {
     if (isLoaded && isSignedIn) {

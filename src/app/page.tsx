@@ -40,7 +40,7 @@ export default function Page() {
               width: '100%',
               maxWidth: 220,
             }}
-            onClick={() => router.push('/sign-in')}
+            onClick={() => router.push('/sign-in/clerk')}
           >
             SIGN IN
           </button>
