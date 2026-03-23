@@ -19,6 +19,17 @@ export default function Sidebar() {
   const [open, setOpen] = useState(false);
 
   // Responsive: show sidebar on desktop, hamburger on mobile
+  // Prevent background scroll when drawer is open
+  if (typeof window !== "undefined") {
+    document.body.style.overflow = open ? "hidden" : "";
+  }
+
+  // Get current path for active link
+  let currentPath = "";
+  if (typeof window !== "undefined") {
+    currentPath = window.location.pathname;
+  }
+
   return (
     <>
       {/* Mobile Hamburger */}
@@ -33,46 +44,49 @@ export default function Sidebar() {
         <span className="sidebar-mobile-logo">FaithReach</span>
       </div>
       {/* Sidebar Drawer (mobile) */}
-      <div className={`sidebar-drawer${open ? " sidebar-drawer-open" : ""}`}>
-        <div className="sidebar-drawer-header">
-          <span className="sidebar-logo">FaithReach</span>
-          <button
-            className="sidebar-close"
-            aria-label="Close menu"
-            onClick={() => setOpen(false)}
-          >
-            &times;
-          </button>
-        </div>
-        <nav className="sidebar-nav">
-          {navItems.map((item) => (
-            <Link
-              key={item.label}
-              href={item.href}
-              className="sidebar-link"
+      <div className={`sidebar-drawer${open ? " sidebar-drawer-open" : ""}`}> 
+        <div className="sidebar-drawer-content">
+          <div className="sidebar-drawer-header">
+            <span className="sidebar-logo">FaithReach</span>
+            <button
+              className="sidebar-close"
+              aria-label="Close menu"
               onClick={() => setOpen(false)}
             >
-              <span className="sidebar-icon">{item.icon}</span>
-              {item.label}
-            </Link>
-          ))}
-        </nav>
-        {isSignedIn && user && (
-          <div className="sidebar-user">
-            <Image
-              src={user.imageUrl}
-              alt="User avatar"
-              className="sidebar-avatar"
-              width={40}
-              height={40}
-              style={{ borderRadius: '50%' }}
-            />
-            <div>
-              <div className="sidebar-username">{user.fullName || user.username}</div>
-              <div className="sidebar-role">{typeof user.publicMetadata?.role === "string" ? user.publicMetadata.role : "Content Creator"}</div>
-            </div>
+              &times;
+            </button>
           </div>
-        )}
+          <nav className="sidebar-nav" style={{ flex: 1 }}>
+            {navItems.map((item) => (
+              <Link
+                key={item.label}
+                href={item.href}
+                className={`sidebar-link${currentPath === item.href ? " sidebar-link-active" : ""}`}
+                onClick={() => setOpen(false)}
+                style={currentPath === item.href ? { background: "#f6f0ff", color: "#7c3aed" } : {}}
+              >
+                <span className="sidebar-icon">{item.icon}</span>
+                {item.label}
+              </Link>
+            ))}
+          </nav>
+          {isSignedIn && user && (
+            <div className="sidebar-user" style={{ marginTop: "auto", borderTop: "1px solid #eee", paddingTop: 18 }}>
+              <Image
+                src={user.imageUrl}
+                alt="User avatar"
+                className="sidebar-avatar"
+                width={40}
+                height={40}
+                style={{ borderRadius: '50%' }}
+              />
+              <div>
+                <div className="sidebar-username">{user.fullName || user.username}</div>
+                <div className="sidebar-role">{typeof user.publicMetadata?.role === "string" ? user.publicMetadata.role : "Content Creator"}</div>
+              </div>
+            </div>
+          )}
+        </div>
       </div>
       {/* Sidebar (desktop) */}
       <aside className="sidebar">
@@ -221,6 +235,15 @@ export default function Sidebar() {
             pointer-events: auto;
             opacity: 1;
           }
+          .sidebar-drawer-content {
+            background: #fff;
+            box-shadow: 0 8px 32px 0 rgba(44, 62, 80, 0.18);
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            padding-bottom: 24px;
+          }
           .sidebar-drawer-header {
             display: flex;
             align-items: center;
@@ -228,6 +251,10 @@ export default function Sidebar() {
             background: #fff;
             padding: 24px 24px 0 24px;
           }
+                  .sidebar-link-active {
+                    background: #f6f0ff !important;
+                    color: #7c3aed !important;
+                  }
           .sidebar-close {
             background: none;
             border: none;
