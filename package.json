@@ -12,11 +12,13 @@
   "dependencies": {
     "@clerk/clerk-react": "^5.61.3",
     "@clerk/nextjs": "^7.0.6",
-    "next": "16.2.1",
+    "@clerk/shared": "^4.3.2",
+    "next": "^16.2.1",
     "react": "19.2.4",
     "react-dom": "19.2.4"
   },
   "devDependencies": {
+    "@clerk/types": "^4.101.20",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.2",
     "@types/jest": "^30.0.0",

@@ -9,4 +9,5 @@ module.exports = {
   transform: {
     '^.+\\.(ts|tsx)$': ['ts-jest', { tsconfig: '<rootDir>/tsconfig.json' }],
   },
+  testRegex: '(/__tests__/.*|(\\.|/)(test|spec))\\.(ts|tsx)$',
 };

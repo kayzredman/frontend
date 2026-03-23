@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useUser } from "@clerk/nextjs";
 
 interface Post {
@@ -23,13 +23,9 @@ export default function PostsPage() {
   const [content, setContent] = useState("");
   const [loading, setLoading] = useState(false);
 
-  useEffect(() => {
-    if (isLoaded && isSignedIn) {
-      fetchPosts();
-    }
-  }, [isLoaded, isSignedIn, user?.id]);
 
-  async function fetchPosts() {
+
+  const fetchPosts = useCallback(async () => {
     setLoading(true);
     try {
       const res = await fetch("http://localhost:3002/posts");
@@ -39,7 +35,15 @@ export default function PostsPage() {
     } finally {
       setLoading(false);
     }
-  }
+  }, [user]);
+
+  useEffect(() => {
+    if (isLoaded && isSignedIn) {
+      fetchPosts();
+    }
+  }, [isLoaded, isSignedIn, user, fetchPosts]);
+
+
 
   async function createPost(e: React.FormEvent) {
     e.preventDefault();

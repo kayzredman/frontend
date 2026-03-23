@@ -7,7 +7,7 @@ jest.mock('@clerk/nextjs', () => ({
   UserButton: () => <div>UserButton</div>,
 }));
 
-const { useUser } = require('@clerk/nextjs');
+import { useUser } from '@clerk/nextjs';
 
 describe('UserPage', () => {
   afterEach(() => {

@@ -1,6 +1,7 @@
 
 "use client";
 import { UserButton, useUser } from '@clerk/nextjs';
+import Image from 'next/image';
 
 export default function UserPage() {
   const { isLoaded, isSignedIn, user } = useUser();
@@ -63,12 +64,12 @@ export default function UserPage() {
             marginBottom: 4,
           }}
         >
-          <img
+          <Image
             src={user.imageUrl}
             alt="Profile"
+            width={80}
+            height={80}
             style={{
-              width: 80,
-              height: 80,
               borderRadius: '50%',
               objectFit: 'cover',
               border: '2.5px solid #fff',

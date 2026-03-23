@@ -13,7 +13,10 @@ export default function ClerkSignInPage() {
         justifyContent: 'center',
       }}
     >
-      <SignIn appearance={{ elements: { card: { boxShadow: "0 8px 32px rgba(24,27,32,0.18)", borderRadius: 24 } } }} />
+      <SignIn 
+        afterSignInUrl="/dashboard"
+        appearance={{ elements: { card: { boxShadow: "0 8px 32px rgba(24,27,32,0.18)", borderRadius: 24 } } }} 
+      />
     </div>
   );
 }

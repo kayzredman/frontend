@@ -1,10 +1,19 @@
 "use client";
-import Link from 'next/link';
+
 import { useRouter } from 'next/navigation';
+import { useUser } from '@clerk/nextjs';
 import '../app/auth-panel.css';
 
-export default function Page() {
+export default function HomePage() {
   const router = useRouter();
+  const { isSignedIn } = useUser();
+  if (isSignedIn) {
+    // Redirect to dashboard if signed in
+    React.useEffect(() => {
+      router.replace('/dashboard');
+    }, [router]);
+    return null;
+  }
   return (
     <div
       className="auth-panel-bg"
