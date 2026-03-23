@@ -1,5 +1,7 @@
 "use client";
 
+
+import React from 'react';
 import { useRouter } from 'next/navigation';
 import { useUser } from '@clerk/nextjs';
 import '../app/auth-panel.css';
@@ -7,11 +9,14 @@ import '../app/auth-panel.css';
 export default function HomePage() {
   const router = useRouter();
   const { isSignedIn } = useUser();
-  if (isSignedIn) {
-    // Redirect to dashboard if signed in
-    React.useEffect(() => {
+
+  React.useEffect(() => {
+    if (isSignedIn) {
       router.replace('/dashboard');
-    }, [router]);
+    }
+  }, [isSignedIn, router]);
+
+  if (isSignedIn) {
     return null;
   }
   return (
