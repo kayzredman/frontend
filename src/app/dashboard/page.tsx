@@ -79,7 +79,7 @@ export default function DashboardPage() {
           <span style={{ fontSize: 18, marginRight: 8, display: "flex", alignItems: "center" }}>✈️</span>
           Create New Post
         </button>
-        <button style={{
+        <a href="/analytics" style={{
           background: "#fff",
           color: "#7c3aed",
           border: "2px solid #e5e7eb",
@@ -95,11 +95,12 @@ export default function DashboardPage() {
           flex: 1,
           justifyContent: "center",
           transition: "box-shadow 0.2s, transform 0.2s",
-          outline: "none"
+          outline: "none",
+          textDecoration: "none"
         }}>
           <span style={{ fontSize: 18, marginRight: 8, display: "flex", alignItems: "center" }}>📈</span>
           View Full Analytics
-        </button>
+        </a>
       </div>
     </div>
   );
