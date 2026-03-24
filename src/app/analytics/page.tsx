@@ -48,8 +48,8 @@ const topPosts = [
 
 export default function AnalyticsPage() {
   return (
-    <div style={{ padding: "40px 0", background: "#f7f8fa", minHeight: "100vh", display: "flex", flexDirection: "column", alignItems: "center" }}>
-      <h1 style={{ fontSize: "2.5rem", fontWeight: 700, marginBottom: 8 }}>Analytics</h1>
+    <div style={{ padding: "40px 0", background: "#fff", minHeight: "100vh", display: "flex", flexDirection: "column", alignItems: "center" }}>
+      <h1 style={{ fontSize: "2.5rem", fontWeight: 700, marginBottom: 8, color: "#181b20" }}>Analytics</h1>
       <p style={{ color: "#6b7280", marginBottom: 32, fontSize: "1.2rem" }}>
         Track your growth and engagement across all platforms
       </p>
@@ -62,7 +62,7 @@ export default function AnalyticsPage() {
         </div>
         <div style={{ flex: 1, background: "#fff", borderRadius: 16, padding: 28, boxShadow: "0 2px 8px 0 rgba(44, 62, 80, 0.10)" }}>
           <div style={{ color: "#888", fontSize: 15, marginBottom: 8 }}>Total Engagement</div>
-          <div style={{ fontWeight: 700, fontSize: 32 }}>12,450</div>
+          <div style={{ fontWeight: 700, fontSize: 32, color: "#181b20" }}>12,450</div>
           <div style={{ color: "#888", fontSize: 15, marginTop: 8 }}>5.7% engagement rate</div>
         </div>
         <div style={{ flex: 1, background: "#fff", borderRadius: 16, padding: 28, boxShadow: "0 2px 8px 0 rgba(44, 62, 80, 0.10)" }}>
@@ -72,14 +72,14 @@ export default function AnalyticsPage() {
         </div>
         <div style={{ flex: 1, background: "#fff", borderRadius: 16, padding: 28, boxShadow: "0 2px 8px 0 rgba(44, 62, 80, 0.10)" }}>
           <div style={{ color: "#888", fontSize: 15, marginBottom: 8 }}>Posts This Week</div>
-          <div style={{ fontWeight: 700, fontSize: 32 }}>7</div>
+          <div style={{ fontWeight: 700, fontSize: 32, color: "#181b20" }}>7</div>
           <div style={{ color: "#888", fontSize: 15, marginTop: 8 }}>Across all platforms</div>
         </div>
       </div>
       {/* Growth Trends & Platform Distribution */}
       <div style={{ display: "flex", gap: 24, width: "100%", maxWidth: 1300, marginBottom: 32 }}>
         <div style={{ flex: 2, background: "#fff", borderRadius: 16, padding: 28, boxShadow: "0 2px 8px 0 rgba(44, 62, 80, 0.10)", minWidth: 400 }}>
-          <div style={{ fontWeight: 700, fontSize: 18, marginBottom: 18 }}>Weekly Growth Trends</div>
+          <div style={{ fontWeight: 700, fontSize: 18, marginBottom: 18, color: "#181b20" }}>Weekly Growth Trends</div>
           {/* Simple SVG Line Chart */}
           <svg width="100%" height="220" viewBox="0 0 500 220">
             {/* Axes */}
@@ -139,7 +139,7 @@ export default function AnalyticsPage() {
           </svg>
         </div>
         <div style={{ flex: 1, background: "#fff", borderRadius: 16, padding: 28, boxShadow: "0 2px 8px 0 rgba(44, 62, 80, 0.10)", minWidth: 320 }}>
-          <div style={{ fontWeight: 700, fontSize: 18, marginBottom: 18 }}>Platform Distribution</div>
+          <div style={{ fontWeight: 700, fontSize: 18, marginBottom: 18, color: "#181b20" }}>Platform Distribution</div>
           {/* Simple SVG Pie Chart */}
           <svg width="100%" height="200" viewBox="0 0 220 200">
             {/* Pie slices */}
@@ -187,7 +187,7 @@ export default function AnalyticsPage() {
       {/* Engagement by Platform & Platform Performance */}
       <div style={{ display: "flex", gap: 24, width: "100%", maxWidth: 1300, marginBottom: 32 }}>
         <div style={{ flex: 2, background: "#fff", borderRadius: 16, padding: 28, boxShadow: "0 2px 8px 0 rgba(44, 62, 80, 0.10)", minWidth: 400 }}>
-          <div style={{ fontWeight: 700, fontSize: 18, marginBottom: 18 }}>Engagement by Platform</div>
+          <div style={{ fontWeight: 700, fontSize: 18, marginBottom: 18, color: "#181b20" }}>Engagement by Platform</div>
           {/* Simple SVG Bar Chart */}
           <svg width="100%" height="200" viewBox="0 0 400 200">
             {/* Axes */}
@@ -231,10 +231,10 @@ export default function AnalyticsPage() {
           </svg>
         </div>
         <div style={{ flex: 1, background: "#fff", borderRadius: 16, padding: 28, boxShadow: "0 2px 8px 0 rgba(44, 62, 80, 0.10)", minWidth: 320, display: "flex", flexDirection: "column", gap: 18 }}>
-          <div style={{ fontWeight: 700, fontSize: 18, marginBottom: 8 }}>Platform Performance</div>
+          <div style={{ fontWeight: 700, fontSize: 18, marginBottom: 8, color: "#181b20" }}>Platform Performance</div>
           {platformPerf.map((p, i) => (
             <div key={i} style={{ border: "1.5px solid #f3f4f6", borderRadius: 10, padding: 14, marginBottom: 4 }}>
-              <div style={{ fontWeight: 700, fontSize: 16 }}>{p.name}</div>
+              <div style={{ fontWeight: 700, fontSize: 16, color: "#181b20" }}>{p.name}</div>
               <div style={{ color: "#888", fontSize: 13 }}>{p.handle}</div>
               <div style={{ display: "flex", gap: 24, marginTop: 8 }}>
                 <div>
@@ -252,12 +252,12 @@ export default function AnalyticsPage() {
       </div>
       {/* Top Performing Posts */}
       <div style={{ width: "100%", maxWidth: 900, background: "#fff", borderRadius: 16, padding: 32, boxShadow: "0 2px 8px 0 rgba(44, 62, 80, 0.10)", marginBottom: 32 }}>
-        <div style={{ fontWeight: 700, fontSize: 18, marginBottom: 18 }}>Top Performing Posts</div>
+        <div style={{ fontWeight: 700, fontSize: 18, marginBottom: 18, color: "#181b20" }}>Top Performing Posts</div>
         {topPosts.map((p, i) => (
           <div key={i} style={{ display: "flex", alignItems: "center", gap: 18, border: "1.5px solid #f3f4f6", borderRadius: 10, padding: 18, marginBottom: 12 }}>
             <div style={{ background: "#818cf8", color: "#fff", borderRadius: "50%", width: 32, height: 32, display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, fontSize: 18 }}>{i + 1}</div>
             <div style={{ flex: 1 }}>
-              <div style={{ fontWeight: 600, fontSize: 15, marginBottom: 6 }}>{p.title}</div>
+              <div style={{ fontWeight: 700, fontSize: 15, marginBottom: 6, color: "#181b20" }}>{p.title}</div>
               <div style={{ color: "#888", fontSize: 14, display: "flex", gap: 18 }}>
                 <span>♡ {p.engagement} engagements</span>
                 <span>👁 {p.reach} reach</span>

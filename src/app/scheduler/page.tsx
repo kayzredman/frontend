@@ -80,8 +80,8 @@ function Calendar() {
 export default function SchedulerPage() {
   const [view, setView] = useState("calendar");
   return (
-    <div style={{ padding: "40px 0", background: "#f7f8fa", minHeight: "100vh", display: "flex", flexDirection: "column", alignItems: "center" }}>
-      <h1 style={{ fontSize: "2.5rem", fontWeight: 700, marginBottom: 8 }}>Scheduler</h1>
+    <div style={{ padding: "40px 0", background: "#fff", minHeight: "100vh", display: "flex", flexDirection: "column", alignItems: "center" }}>
+      <h1 style={{ fontSize: "2.5rem", fontWeight: 700, marginBottom: 8, color: "#181b20" }}>Scheduler</h1>
       <p style={{ color: "#6b7280", marginBottom: 32, fontSize: "1.2rem" }}>
         Manage and schedule your content across platforms
       </p>

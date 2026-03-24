@@ -105,8 +105,8 @@ export default function PostsPage() {
             padding: 12,
             fontSize: 16,
             resize: 'vertical',
-            background: '#181b20',
-            color: '#fff',
+            background: '#fafbfc',
+            color: '#181b20',
           }}
           placeholder="Write a new post..."
         />

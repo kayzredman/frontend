@@ -18,8 +18,8 @@ export default function DashboardPage() {
     return null;
   }
   return (
-    <div style={{ padding: 32 }}>
-      <h1 style={{ fontSize: "2.5rem", fontWeight: 700, marginBottom: 8 }}>Dashboard</h1>
+    <div style={{ padding: 32, background: "#fff", minHeight: "100vh" }}>
+      <h1 style={{ fontSize: "2.5rem", fontWeight: 700, marginBottom: 8, color: "#181b20" }}>Dashboard</h1>
       <p style={{ color: "#6b7280", marginBottom: 32, fontSize: "1.2rem" }}>
         Welcome back! Here&apos;s your content overview.
       </p>
@@ -30,12 +30,12 @@ export default function DashboardPage() {
         <MetricCard title="Posts This Week" value="7" sub="Across all platforms" />
       </div>
       <div className={styles.dashboardCard} style={{ marginBottom: 32 }}>
-        <h2 style={{ fontSize: "1.2rem", fontWeight: 600, marginBottom: 16 }}>Growth Trends</h2>
+        <h2 style={{ fontSize: "1.2rem", fontWeight: 700, marginBottom: 16, color: "#181b20" }}>Growth Trends</h2>
         <GrowthTrendsChart />
       </div>
       <div className={styles.dashboardRow} style={{ display: "flex", gap: 24 }}>
         <div className={styles.dashboardCard} style={{ flex: 1 }}>
-          <h3 style={{ fontSize: "1.1rem", fontWeight: 600, marginBottom: 16 }}>Upcoming Posts</h3>
+          <h3 style={{ fontSize: "1.1rem", fontWeight: 700, marginBottom: 16, color: "#181b20" }}>Upcoming Posts</h3>
           <div style={{ marginBottom: 16 }}>
             <b>Sunday Reflection:</b> In the midst of life&apos;s storms, anchor yourself in God&apos;s unchanging promises. He is your rock and refuge. <span role="img" aria-label="rock">🪨</span><span role="img" aria-label="church">⛪️</span> #SundayThoughts...
             <div style={{ color: "#6b7280", fontSize: 12 }}>Mar 23, 9:00 AM · <span style={{ background: "#e0f7fa", color: "#007b8a", borderRadius: 8, padding: "2px 8px", marginRight: 4 }}>instagram</span> <span style={{ background: "#e0f7fa", color: "#007b8a", borderRadius: 8, padding: "2px 8px" }}>facebook</span></div>
@@ -46,7 +46,7 @@ export default function DashboardPage() {
           </div>
         </div>
         <div className={styles.dashboardCard} style={{ flex: 1 }}>
-          <h3 style={{ fontSize: "1.1rem", fontWeight: 600, marginBottom: 16 }}>Active Content Series</h3>
+          <h3 style={{ fontSize: "1.1rem", fontWeight: 700, marginBottom: 16, color: "#181b20" }}>Active Content Series</h3>
           <div style={{ marginBottom: 16 }}>
             <b>30-Day Prayer Journey</b>
             <div style={{ color: "#6b7280", fontSize: 12 }}>Prayer &amp; Spiritual Growth · 30 posts · Mar 1 - Mar 30</div>
@@ -165,8 +165,8 @@ function GrowthTrendsChart() {
 function MetricCard({ title, value, change, sub }: { title: string; value: string; change?: string; sub?: string }) {
   return (
     <div className={styles.dashboardCard}>
-      <div style={{ color: "#6b7280", fontWeight: 600, marginBottom: 8 }}>{title}</div>
-      <div style={{ fontSize: "2rem", fontWeight: 700, marginBottom: 4 }}>{value}</div>
+      <div style={{ color: "#181b20", fontWeight: 700, marginBottom: 8 }}>{title}</div>
+      <div style={{ fontSize: "2rem", fontWeight: 700, marginBottom: 4, color: "#181b20" }}>{value}</div>
       {change && <div style={{ color: "#16a34a", fontSize: 14 }}>{change}</div>}
       {sub && <div style={{ color: "#6b7280", fontSize: 14 }}>{sub}</div>}
     </div>

@@ -61,25 +61,25 @@ export default function PlannerPage() {
   ];
 
   return (
-    <div style={{ padding: "40px 0", background: "#f7f8fa", minHeight: "100vh", display: "flex", flexDirection: "column", alignItems: "center" }}>
-      <h1 style={{ fontSize: "2.5rem", fontWeight: 700, marginBottom: 8 }}>Content Planner</h1>
+    <div style={{ padding: "40px 0", background: "#fff", minHeight: "100vh", display: "flex", flexDirection: "column", alignItems: "center" }}>
+      <h1 style={{ fontSize: "2.5rem", fontWeight: 700, marginBottom: 8, color: "#181b20" }}>Content Planner</h1>
       <p style={{ color: "#6b7280", marginBottom: 32, fontSize: "1.2rem" }}>
         Organize and manage your devotional series and content themes
       </p>
       {/* Stats Row */}
       <div style={{ display: "flex", gap: 24, width: "100%", maxWidth: 1100, marginBottom: 32 }}>
         <div style={{ flex: 1, background: "#fff", borderRadius: 16, padding: 28, boxShadow: "0 2px 8px 0 rgba(44, 62, 80, 0.10)" }}>
-          <div style={{ fontWeight: 700, fontSize: 22, marginBottom: 6 }}>2</div>
+          <div style={{ fontWeight: 700, fontSize: 22, marginBottom: 6, color: "#181b20" }}>2</div>
           <div style={{ color: "#888", fontSize: 15 }}>Currently running</div>
           <div style={{ color: "#6b7280", fontSize: 15, marginTop: 8 }}>Active Series</div>
         </div>
         <div style={{ flex: 1, background: "#fff", borderRadius: 16, padding: 28, boxShadow: "0 2px 8px 0 rgba(44, 62, 80, 0.10)" }}>
-          <div style={{ fontWeight: 700, fontSize: 22, marginBottom: 6 }}>80</div>
+          <div style={{ fontWeight: 700, fontSize: 22, marginBottom: 6, color: "#181b20" }}>80</div>
           <div style={{ color: "#888", fontSize: 15 }}>Across all series</div>
           <div style={{ color: "#6b7280", fontSize: 15, marginTop: 8 }}>Total Posts Planned</div>
         </div>
         <div style={{ flex: 1, background: "#fff", borderRadius: 16, padding: 28, boxShadow: "0 2px 8px 0 rgba(44, 62, 80, 0.10)" }}>
-          <div style={{ fontWeight: 700, fontSize: 22, marginBottom: 6 }}>1</div>
+          <div style={{ fontWeight: 700, fontSize: 22, marginBottom: 6, color: "#181b20" }}>1</div>
           <div style={{ color: "#888", fontSize: 15 }}>Successfully finished</div>
           <div style={{ color: "#6b7280", fontSize: 15, marginTop: 8 }}>Completed Series</div>
         </div>
@@ -148,11 +148,11 @@ export default function PlannerPage() {
       </div>
       {/* Templates */}
       <div style={{ width: "100%", maxWidth: 1100, background: "#fff", borderRadius: 16, padding: 32, boxShadow: "0 2px 8px 0 rgba(44, 62, 80, 0.10)", marginBottom: 40 }}>
-        <div style={{ fontWeight: 700, fontSize: 18, marginBottom: 18 }}>Popular Content Templates</div>
+        <div style={{ fontWeight: 700, fontSize: 18, marginBottom: 18, color: "#181b20" }}>Popular Content Templates</div>
         <div style={{ display: "flex", gap: 24, flexWrap: "wrap" }}>
           {templates.map((t, i) => (
             <div key={i} style={{ flex: 1, minWidth: 220, background: "#fff", borderRadius: 12, padding: 24, boxShadow: "0 1px 4px 0 rgba(44, 62, 80, 0.08)", display: "flex", flexDirection: "column", alignItems: "flex-start", marginBottom: 12 }}>
-              <div style={{ fontWeight: 600, fontSize: 16, marginBottom: 6 }}>{t.title}</div>
+              <div style={{ fontWeight: 700, fontSize: 16, marginBottom: 6, color: "#181b20" }}>{t.title}</div>
               <div style={{ color: "#888", fontSize: 14, marginBottom: 18 }}>{t.desc}</div>
               <button style={{ background: "#fff", border: "1.5px solid #e5e7eb", borderRadius: 8, padding: "10px 0", fontWeight: 600, fontSize: "1rem", color: "#222", cursor: "pointer", width: "100%" }}>Use Template</button>
             </div>

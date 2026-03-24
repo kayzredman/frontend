@@ -85,17 +85,17 @@ export default function SettingsPage() {
               <div style={{ display: "flex", gap: 24, marginBottom: 18 }}>
                 <div style={{ flex: 1 }}>
                   <div style={{ color: "#888", fontSize: 14, marginBottom: 4 }}>Full Name</div>
-                  <input value={profile.fullName} onChange={e => setProfile(p => ({ ...p, fullName: e.target.value }))} style={{ width: "100%", borderRadius: 8, border: "none", background: "#f3f4f6", padding: "12px 14px", fontSize: "1.08rem", marginBottom: 8 }} />
+                  <input value={profile.fullName} onChange={e => setProfile(p => ({ ...p, fullName: e.target.value }))} style={{ width: "100%", borderRadius: 8, border: "none", background: "#f3f4f6", padding: "12px 14px", fontSize: "1.08rem", marginBottom: 8, color: "#181b20" }} />
                   <div style={{ color: "#888", fontSize: 14, marginBottom: 4 }}>Role</div>
-                  <input value={profile.role} onChange={e => setProfile(p => ({ ...p, role: e.target.value }))} style={{ width: "100%", borderRadius: 8, border: "none", background: "#f3f4f6", padding: "12px 14px", fontSize: "1.08rem", marginBottom: 8 }} />
+                  <input value={profile.role} onChange={e => setProfile(p => ({ ...p, role: e.target.value }))} style={{ width: "100%", borderRadius: 8, border: "none", background: "#f3f4f6", padding: "12px 14px", fontSize: "1.08rem", marginBottom: 8, color: "#181b20" }} />
                   <div style={{ color: "#888", fontSize: 14, marginBottom: 4 }}>Bio</div>
-                  <input value={profile.bio} onChange={e => setProfile(p => ({ ...p, bio: e.target.value }))} placeholder="Tell us about your ministry..." style={{ width: "100%", borderRadius: 8, border: "none", background: "#f3f4f6", padding: "12px 14px", fontSize: "1.08rem" }} />
+                  <input value={profile.bio} onChange={e => setProfile(p => ({ ...p, bio: e.target.value }))} placeholder="Tell us about your ministry..." style={{ width: "100%", borderRadius: 8, border: "none", background: "#f3f4f6", padding: "12px 14px", fontSize: "1.08rem", color: "#181b20" }} />
                 </div>
                 <div style={{ flex: 1 }}>
                   <div style={{ color: "#888", fontSize: 14, marginBottom: 4 }}>Email</div>
-                  <input value={profile.email} onChange={e => setProfile(p => ({ ...p, email: e.target.value }))} style={{ width: "100%", borderRadius: 8, border: "none", background: "#f3f4f6", padding: "12px 14px", fontSize: "1.08rem", marginBottom: 8 }} />
+                  <input value={profile.email} onChange={e => setProfile(p => ({ ...p, email: e.target.value }))} style={{ width: "100%", borderRadius: 8, border: "none", background: "#f3f4f6", padding: "12px 14px", fontSize: "1.08rem", marginBottom: 8, color: "#181b20" }} />
                   <div style={{ color: "#888", fontSize: 14, marginBottom: 4 }}>Organization</div>
-                  <input value={profile.organization} onChange={e => setProfile(p => ({ ...p, organization: e.target.value }))} style={{ width: "100%", borderRadius: 8, border: "none", background: "#f3f4f6", padding: "12px 14px", fontSize: "1.08rem" }} />
+                  <input value={profile.organization} onChange={e => setProfile(p => ({ ...p, organization: e.target.value }))} style={{ width: "100%", borderRadius: 8, border: "none", background: "#f3f4f6", padding: "12px 14px", fontSize: "1.08rem", color: "#181b20" }} />
                 </div>
               </div>
               <div style={{ display: "flex", gap: 12, justifyContent: "flex-end" }}>
@@ -204,15 +204,15 @@ export default function SettingsPage() {
           <div style={{ display: "flex", gap: 24, marginBottom: 18 }}>
             <div style={{ flex: 1 }}>
               <div style={{ color: "#888", fontSize: 14, marginBottom: 4 }}>Current Password</div>
-              <input type="password" value={passwords.current} onChange={e => setPasswords(p => ({ ...p, current: e.target.value }))} style={{ width: "100%", borderRadius: 8, border: "none", background: "#f3f4f6", padding: "12px 14px", fontSize: "1.08rem", marginBottom: 8 }} />
+              <input type="password" value={passwords.current} onChange={e => setPasswords(p => ({ ...p, current: e.target.value }))} style={{ width: "100%", borderRadius: 8, border: "none", background: "#f3f4f6", padding: "12px 14px", fontSize: "1.08rem", marginBottom: 8, color: "#181b20" }} />
             </div>
             <div style={{ flex: 1 }}>
               <div style={{ color: "#888", fontSize: 14, marginBottom: 4 }}>New Password</div>
-              <input type="password" value={passwords.new} onChange={e => setPasswords(p => ({ ...p, new: e.target.value }))} style={{ width: "100%", borderRadius: 8, border: "none", background: "#f3f4f6", padding: "12px 14px", fontSize: "1.08rem", marginBottom: 8 }} />
+              <input type="password" value={passwords.new} onChange={e => setPasswords(p => ({ ...p, new: e.target.value }))} style={{ width: "100%", borderRadius: 8, border: "none", background: "#f3f4f6", padding: "12px 14px", fontSize: "1.08rem", marginBottom: 8, color: "#181b20" }} />
             </div>
             <div style={{ flex: 1 }}>
               <div style={{ color: "#888", fontSize: 14, marginBottom: 4 }}>Confirm New Password</div>
-              <input type="password" value={passwords.confirm} onChange={e => setPasswords(p => ({ ...p, confirm: e.target.value }))} style={{ width: "100%", borderRadius: 8, border: "none", background: "#f3f4f6", padding: "12px 14px", fontSize: "1.08rem" }} />
+              <input type="password" value={passwords.confirm} onChange={e => setPasswords(p => ({ ...p, confirm: e.target.value }))} style={{ width: "100%", borderRadius: 8, border: "none", background: "#f3f4f6", padding: "12px 14px", fontSize: "1.08rem", color: "#181b20" }} />
             </div>
           </div>
           <button style={{ padding: "10px 24px", borderRadius: 8, border: "1.5px solid #e5e7eb", background: "#fff", fontWeight: 500, cursor: "pointer", marginBottom: 24 }}>Update Password</button>
