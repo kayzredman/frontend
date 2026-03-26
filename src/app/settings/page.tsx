@@ -1,233 +1,795 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback, type JSX } from "react";
+import { useAuth, useUser, useClerk, useOrganization } from "@clerk/nextjs";
 import styles from "./settings.module.css";
 
-const initialProfile = {
-  fullName: "Pastor John Smith",
-  email: "pastor.john@faithchurch.org",
-  role: "Content Creator",
-  organization: "Faith Church",
-  bio: "",
+type BackendUser = {
+  name: string;
+  email: string;
+  imageUrl?: string;
+  role?: string;
+  organization?: string;
+  bio?: string;
+  location?: string;
+};
+
+type Tab = "Profile" | "Team" | "Platforms" | "Notifications" | "Billing";
+
+const TAB_ICONS: Record<Tab, JSX.Element> = {
+  Profile: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+      <circle cx="12" cy="7" r="4" />
+    </svg>
+  ),
+  Team: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+      <circle cx="9" cy="7" r="4" />
+      <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+      <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+    </svg>
+  ),
+  Platforms: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
+      <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
+    </svg>
+  ),
+  Notifications: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
+      <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+    </svg>
+  ),
+  Billing: (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <rect x="1" y="4" width="22" height="16" rx="2" ry="2" />
+      <line x1="1" y1="10" x2="23" y2="10" />
+    </svg>
+  ),
+};
+
+const PLATFORMS = [
+  { name: "Instagram", icon: "📷", color: "#E1306C", bg: "#fde8ef" },
+  { name: "Facebook", icon: "📘", color: "#1877F2", bg: "#e8f0fe" },
+  { name: "X (Twitter)", icon: "𝕏", color: "#181b20", bg: "#f3f4f6" },
+  { name: "YouTube", icon: "▶", color: "#FF0000", bg: "#fee2e2" },
+];
+
+const PLAN = {
+  name: "Pro Plan",
+  price: 29,
+  tagline: "For growing ministries",
+  features: [
+    "Unlimited posts across all platforms",
+    "Advanced analytics and insights",
+    "AI Growth Assistant",
+    "Priority support",
+  ],
+  nextBilling: "April 22, 2026",
+  card: "4242",
+  history: [
+    { date: "March 22, 2026", amount: 29 },
+    { date: "February 22, 2026", amount: 29 },
+    { date: "January 22, 2026", amount: 29 },
+  ],
 };
 
 export default function SettingsPage() {
-  const [tab, setTab] = useState("Profile");
-  const [profile, setProfile] = useState(initialProfile);
-  const [photo, setPhoto] = useState<string | null>(null);
-  const [passwords, setPasswords] = useState({ current: "", new: "", confirm: "" });
-  const [emailPrefs, setEmailPrefs] = useState({
-    scheduled: true,
-    engagement: true,
-    followers: true,
-    tips: true,
+  const { isLoaded, isSignedIn, user: clerkUser } = useUser();
+  const { getToken } = useAuth();
+  const { signOut } = useClerk();
+
+  const [tab, setTab] = useState<Tab>("Profile");
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [toast, setToast] = useState<{ type: "success" | "error"; msg: string } | null>(null);
+
+  // Profile form state
+  const [profile, setProfile] = useState({
+    name: "", email: "", role: "", organization: "", bio: "", location: "",
+  });
+  const [savedProfile, setSavedProfile] = useState(profile);
+  const [editMode, setEditMode] = useState(false);
+  const [imageUrl, setImageUrl] = useState("");
+
+  // Notification prefs (local state)
+  const [notifPrefs, setNotifPrefs] = useState({
+    scheduled: true, engagement: true, followers: true, tips: true,
+    push: false, weeklyReport: true,
   });
 
-  // Simulate connected platforms
-  const platforms = [
-    { name: "Instagram", handle: "@faithchurch", connected: true },
-    { name: "Facebook", handle: "Faith Church Community", connected: true },
-    { name: "X (Twitter)", handle: "@faithchurchorg", connected: true },
-    { name: "YouTube", handle: "", connected: false },
-  ];
+  // Platform connections (mock)
+  const [connections, setConnections] = useState<Record<string, { connected: boolean; handle: string }>>({
+    Instagram: { connected: true, handle: "@faithchurch" },
+    Facebook: { connected: true, handle: "Faith Church Community" },
+    "X (Twitter)": { connected: true, handle: "@faithchurchorg" },
+    YouTube: { connected: false, handle: "" },
+  });
 
-  // Simulate plan
-  const plan = {
-    name: "Pro Plan",
-    price: 29,
-    features: [
-      "Unlimited posts across all platforms",
-      "Advanced analytics and insights",
-      "AI Growth Assistant",
-      "Priority support",
-    ],
-    nextBilling: "April 22, 2026",
-    card: "4242",
-    history: [
-      { date: "March 22, 2026", amount: 29 },
-      { date: "February 22, 2026", amount: 29 },
-      { date: "January 22, 2026", amount: 29 },
-    ],
+  // Team / Org state
+  const { organization, membership } = useOrganization();
+  const [inviteEmail, setInviteEmail] = useState("");
+  const [inviteRole, setInviteRole] = useState<"org:admin" | "org:member">("org:member");
+  const [inviting, setInviting] = useState(false);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [teamMembers, setTeamMembers] = useState<any[]>([]);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [pendingInvites, setPendingInvites] = useState<any[]>([]);
+
+  const loadTeamData = useCallback(async () => {
+    if (!organization) return;
+    try {
+      const [mRes, iRes] = await Promise.all([
+        organization.getMemberships({ pageSize: 100 }),
+        organization.getInvitations({ status: ["pending"], pageSize: 100 }),
+      ]);
+      setTeamMembers(mRes.data ?? []);
+      setPendingInvites(iRes.data ?? []);
+    } catch {
+      // silently fail on poll
+    }
+  }, [organization]);
+
+  // Load team data on mount + auto-refresh every 5s while Team tab is active
+  useEffect(() => {
+    if (tab !== "Team" || !organization) return;
+    loadTeamData();
+    const id = setInterval(loadTeamData, 5000);
+    return () => clearInterval(id);
+  }, [tab, organization, loadTeamData]);
+
+  const showToast = (type: "success" | "error", msg: string) => {
+    setToast({ type, msg });
+    setTimeout(() => setToast(null), 3000);
   };
 
-  return (
-    <div className={styles.settingsContainer}>
-      <h1 style={{ fontSize: "2.5rem", fontWeight: 700, color: "#181b20", marginBottom: 8 }}>Settings</h1>
-      <p style={{ color: "#181b20", marginBottom: 32, fontSize: "1.2rem", fontWeight: 500 }}>
-        Manage your account, connections, and preferences
-      </p>
-      {/* Tabs */}
-      <div className={styles.settingsTabs}>
-        {['Profile', 'Platforms', 'Notifications', 'Billing'].map((t) => (
-          <button
-            key={t}
-            onClick={() => setTab(t)}
-            className={styles.settingsTabButton + (tab === t ? ' ' + styles.active : '')}
-          >
-            {t}
-          </button>
-        ))}
-      </div>
-      {/* Tab Content */}
-      <div className={styles.settingsCard}>
-        {tab === "Profile" && (
-          <div style={{ display: "flex", flexWrap: "wrap", gap: 32 }}>
-            {/* Profile Info */}
-            <div style={{ flex: 1, minWidth: 320 }}>
-              <div style={{ fontWeight: 700, fontSize: "1.25rem", marginBottom: 22, color: "#181b20" }}>Profile Information</div>
-              <div style={{ display: "flex", alignItems: "center", gap: 24, marginBottom: 24 }}>
-                <img src={photo || "/avatar.png"} alt="Profile" style={{ width: 90, height: 90, borderRadius: "50%", objectFit: "cover", border: "2px solid #eee" }} />
-                <div>
-                  <button style={{ padding: "8px 18px", borderRadius: 8, border: "1.5px solid #e5e7eb", background: "#fff", fontWeight: 500, cursor: "pointer", marginBottom: 6 }}>Change Photo</button>
-                  <div style={{ color: "#888", fontSize: 13 }}>JPG, PNG or GIF. Max size 2MB</div>
-                </div>
-              </div>
-              <div style={{ display: "flex", gap: 24, marginBottom: 18 }}>
-                <div style={{ flex: 1 }}>
-                  <div style={{ color: "#181b20", fontSize: 15, marginBottom: 4, fontWeight: 700 }}>Full Name</div>
-                  <input value={profile.fullName} onChange={e => setProfile(p => ({ ...p, fullName: e.target.value }))} style={{ width: "100%", borderRadius: 8, border: "none", background: "#f3f4f6", padding: "12px 14px", fontSize: "1.08rem", marginBottom: 8, color: "#181b20" }} />
-                  <div style={{ color: "#181b20", fontSize: 15, marginBottom: 4, fontWeight: 700 }}>Role</div>
-                  <input value={profile.role} onChange={e => setProfile(p => ({ ...p, role: e.target.value }))} style={{ width: "100%", borderRadius: 8, border: "none", background: "#f3f4f6", padding: "12px 14px", fontSize: "1.08rem", marginBottom: 8, color: "#181b20" }} />
-                  <div style={{ color: "#181b20", fontSize: 15, marginBottom: 4, fontWeight: 700 }}>Bio</div>
-                  <input value={profile.bio} onChange={e => setProfile(p => ({ ...p, bio: e.target.value }))} placeholder="Tell us about your ministry..." style={{ width: "100%", borderRadius: 8, border: "none", background: "#f3f4f6", padding: "12px 14px", fontSize: "1.08rem", color: "#181b20" }} />
-                </div>
-                <div style={{ flex: 1 }}>
-                  <div style={{ color: "#181b20", fontSize: 15, marginBottom: 4, fontWeight: 700 }}>Email</div>
-                  <input value={profile.email} onChange={e => setProfile(p => ({ ...p, email: e.target.value }))} style={{ width: "100%", borderRadius: 8, border: "none", background: "#f3f4f6", padding: "12px 14px", fontSize: "1.08rem", marginBottom: 8, color: "#181b20" }} />
-                  <div style={{ color: "#181b20", fontSize: 15, marginBottom: 4, fontWeight: 700 }}>Organization</div>
-                  <input value={profile.organization} onChange={e => setProfile(p => ({ ...p, organization: e.target.value }))} style={{ width: "100%", borderRadius: 8, border: "none", background: "#f3f4f6", padding: "12px 14px", fontSize: "1.08rem", color: "#181b20" }} />
-                </div>
-              </div>
-              <div style={{ display: "flex", gap: 12, justifyContent: "flex-end" }}>
-                <button style={{ padding: "10px 24px", borderRadius: 8, border: "none", background: "#f3f4f6", color: "#181b20", fontWeight: 700, fontSize: "1.08rem", cursor: "pointer" }}>Cancel</button>
-                <button style={{ padding: "10px 24px", borderRadius: 8, border: "none", background: "#11111a", color: "#fff", fontWeight: 700, fontSize: "1.08rem", cursor: "pointer" }}>Save Changes</button>
-              </div>
-            </div>
+  const fetchProfile = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError("");
+      const token = await getToken();
+      if (!token) throw new Error("Not authenticated");
+      const res = await fetch("/api/user/me", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) throw new Error("Failed to load profile");
+      const data: BackendUser = await res.json();
+      const p = {
+        name: data.name || "",
+        email: data.email || "",
+        role: data.role || "",
+        organization: data.organization || "",
+        bio: data.bio || "",
+        location: data.location || "",
+      };
+      setProfile(p);
+      setSavedProfile(p);
+      setImageUrl(data.imageUrl || clerkUser?.imageUrl || "");
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : "Something went wrong");
+    } finally {
+      setLoading(false);
+    }
+  }, [getToken, clerkUser?.imageUrl]);
+
+  useEffect(() => {
+    if (isLoaded && isSignedIn) fetchProfile();
+  }, [isLoaded, isSignedIn, fetchProfile]);
+
+  const handleSaveProfile = async () => {
+    try {
+      setSaving(true);
+      const token = await getToken();
+      const res = await fetch("/api/user/me", {
+        method: "PUT",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          name: profile.name,
+          bio: profile.bio,
+          location: profile.location,
+          organization: profile.organization,
+          role: profile.role,
+        }),
+      });
+      if (!res.ok) throw new Error("Save failed");
+      const data: BackendUser = await res.json();
+      const p = {
+        name: data.name || "",
+        email: data.email || "",
+        role: data.role || "",
+        organization: data.organization || "",
+        bio: data.bio || "",
+        location: data.location || "",
+      };
+      setProfile(p);
+      setSavedProfile(p);
+      setEditMode(false);
+      showToast("success", "Profile updated successfully");
+    } catch {
+      showToast("error", "Failed to save changes");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleCancelProfile = () => {
+    setProfile(savedProfile);
+    setEditMode(false);
+  };
+
+  const handleTogglePlatform = (name: string) => {
+    setConnections((prev) => ({
+      ...prev,
+      [name]: {
+        ...prev[name],
+        connected: !prev[name].connected,
+        handle: prev[name].connected ? "" : prev[name].handle || "@connected",
+      },
+    }));
+  };
+
+  // ── Loading & error states ─────────────────────────────
+  if (!isLoaded || loading) {
+    return (
+      <div className={styles.settingsPage}>
+        <div className={styles.settingsContainer}>
+          <div className={styles.loadingState}>
+            <div className={styles.spinner} />
+            <div className={styles.loadingText}>Loading settings...</div>
           </div>
-        )}
-        {tab === "Platforms" && (
-          <div>
-            <div style={{ fontWeight: 700, fontSize: "1.25rem", marginBottom: 22, color: "#181b20" }}>Connected Platforms</div>
-            {platforms.map((p, i) => (
-              <div key={p.name} style={{ display: "flex", alignItems: "center", gap: 18, background: "#fafbfc", borderRadius: 12, padding: 18, marginBottom: 14 }}>
-                <div style={{ width: 44, height: 44, borderRadius: "50%", background: "linear-gradient(135deg, #a259f7, #f6f0ff)", display: "flex", alignItems: "center", justifyContent: "center", fontWeight: 700, color: "#fff", fontSize: 22 }}>{p.name[0]}</div>
-                <div style={{ flex: 1 }}>
-                  <div style={{ fontWeight: 700, color: "#181b20", fontSize: 16 }}>{p.name}</div>
-                  <div style={{ color: "#444", fontSize: 15, fontWeight: 600 }}>{p.connected ? `Connected as ${p.handle}` : "Not connected"}</div>
-                </div>
-                {p.connected ? (
-                  <>
-                    <span style={{ color: "#10b981", fontWeight: 600, fontSize: 15, marginRight: 8 }}>✓ Connected</span>
-                    <button style={{ padding: "8px 18px", borderRadius: 8, border: "1.5px solid #e5e7eb", background: "#fff", fontWeight: 500, cursor: "pointer" }}>Disconnect</button>
-                  </>
-                ) : (
-                  <button style={{ padding: "8px 18px", borderRadius: 8, border: "none", background: "#11111a", color: "#fff", fontWeight: 600, cursor: "pointer" }}>Connect</button>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className={styles.settingsPage}>
+        <div className={styles.settingsContainer}>
+          <div className={styles.errorText}>{error}</div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className={styles.settingsPage}>
+      <div className={styles.settingsContainer}>
+        {/* Header */}
+        <div className={styles.pageHeader}>
+          <h1>Settings</h1>
+          <p>Manage your account, connections, and preferences</p>
+        </div>
+
+        {/* Tabs */}
+        <div className={styles.tabs}>
+          {(["Profile", "Team", "Platforms", "Notifications", "Billing"] as Tab[]).map((t) => (
+            <button
+              key={t}
+              onClick={() => setTab(t)}
+              className={`${styles.tabBtn} ${tab === t ? styles.tabBtnActive : ""}`}
+            >
+              {TAB_ICONS[t]}
+              {t}
+            </button>
+          ))}
+        </div>
+
+        {/* ── Profile Tab ───────────────────────────────── */}
+        {tab === "Profile" && (
+          <>
+            {/* Profile Information Card */}
+            <div className={styles.card}>
+              <div className={styles.cardTitleRow}>
+                <h3 className={styles.cardTitle}>Profile Information</h3>
+                {!editMode && (
+                  <button className={styles.btnEdit} onClick={() => setEditMode(true)}>
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                      <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                    </svg>
+                    Edit
+                  </button>
                 )}
               </div>
-            ))}
-            <div style={{ marginTop: 32, background: "#fafbfc", borderRadius: 12, padding: 24 }}>
-              <div style={{ fontWeight: 700, marginBottom: 12, color: "#181b20", fontSize: "1.15rem" }}>OAuth Permissions</div>
-              <ul style={{ color: "#222", fontSize: 15, paddingLeft: 18, margin: 0 }}>
-                <li>✓ Publish posts on your behalf</li>
-                <li>✓ Read engagement metrics and analytics</li>
-                <li>✓ Manage scheduled posts</li>
-                <li style={{ color: "#e11d48" }}>✗ We never access your private messages</li>
-                <li style={{ color: "#e11d48" }}>✗ We never modify your account settings</li>
+
+              <div className={styles.avatarRow}>
+                {imageUrl ? (
+                  <img src={imageUrl} alt="Profile" className={styles.avatarImg} />
+                ) : (
+                  <div className={styles.avatarFallback}>
+                    {profile.name?.[0]?.toUpperCase() || "?"}
+                  </div>
+                )}
+                <div className={styles.avatarActions}>
+                  <button className={styles.changePhotoBtn}>Change Photo</button>
+                  <span className={styles.avatarHint}>JPG, PNG or GIF. Max size 2MB</span>
+                </div>
+              </div>
+
+              <div className={styles.formGrid}>
+                <div className={styles.formGroup}>
+                  <label className={styles.formLabel}>Full Name</label>
+                  {editMode ? (
+                    <input
+                      className={styles.formInput}
+                      value={profile.name}
+                      onChange={(e) => setProfile((p) => ({ ...p, name: e.target.value }))}
+                    />
+                  ) : (
+                    <div className={styles.formValue}>{profile.name || "—"}</div>
+                  )}
+                </div>
+                <div className={styles.formGroup}>
+                  <label className={styles.formLabel}>Email</label>
+                  <div className={styles.formValue}>{profile.email || "—"}</div>
+                </div>
+                <div className={styles.formGroup}>
+                  <label className={styles.formLabel}>Role</label>
+                  {editMode ? (
+                    <input
+                      className={styles.formInput}
+                      value={profile.role}
+                      onChange={(e) => setProfile((p) => ({ ...p, role: e.target.value }))}
+                    />
+                  ) : (
+                    <div className={styles.formValue}>{profile.role || "—"}</div>
+                  )}
+                </div>
+                <div className={styles.formGroup}>
+                  <label className={styles.formLabel}>Organization</label>
+                  {editMode ? (
+                    <input
+                      className={styles.formInput}
+                      value={profile.organization}
+                      onChange={(e) => setProfile((p) => ({ ...p, organization: e.target.value }))}
+                    />
+                  ) : (
+                    <div className={styles.formValue}>{profile.organization || "—"}</div>
+                  )}
+                </div>
+                <div className={styles.formGroup}>
+                  <label className={styles.formLabel}>Location</label>
+                  {editMode ? (
+                    <input
+                      className={styles.formInput}
+                      value={profile.location}
+                      onChange={(e) => setProfile((p) => ({ ...p, location: e.target.value }))}
+                    />
+                  ) : (
+                    <div className={styles.formValue}>{profile.location || "—"}</div>
+                  )}
+                </div>
+                <div className={styles.formGroupFull}>
+                  <label className={styles.formLabel}>Bio</label>
+                  {editMode ? (
+                    <textarea
+                      className={styles.formTextarea}
+                      value={profile.bio}
+                      onChange={(e) => setProfile((p) => ({ ...p, bio: e.target.value }))}
+                      placeholder="Tell us about your ministry..."
+                    />
+                  ) : (
+                    <div className={styles.formValue}>{profile.bio || "No bio yet"}</div>
+                  )}
+                </div>
+              </div>
+
+              {editMode && (
+                <div className={styles.formActions}>
+                  <button className={styles.btnCancel} onClick={handleCancelProfile}>Cancel</button>
+                  <button className={styles.btnSave} onClick={handleSaveProfile} disabled={saving}>
+                    {saving ? "Saving..." : "Save Changes"}
+                  </button>
+                </div>
+              )}
+            </div>
+
+            {/* Security Card */}
+            <div className={styles.card}>
+              <h3 className={styles.cardTitle}>Security</h3>
+              <div className={styles.passwordGrid}>
+                <div className={styles.formGroup}>
+                  <label className={styles.formLabel}>Current Password</label>
+                  <input className={styles.formInput} type="password" placeholder="••••••••" />
+                </div>
+                <div className={styles.formGroup}>
+                  <label className={styles.formLabel}>New Password</label>
+                  <input className={styles.formInput} type="password" placeholder="••••••••" />
+                </div>
+                <div className={styles.formGroup}>
+                  <label className={styles.formLabel}>Confirm New Password</label>
+                  <input className={styles.formInput} type="password" placeholder="••••••••" />
+                </div>
+              </div>
+              <button className={styles.btnOutline}>Update Password</button>
+            </div>
+
+            {/* Danger Zone */}
+            <div className={styles.dangerCard}>
+              <h3 className={styles.dangerTitle}>Danger Zone</h3>
+              <div className={styles.dangerItem}>
+                <div className={styles.dangerItemInfo}>
+                  <h4>Log Out</h4>
+                  <p>Sign out of your FaithReach account</p>
+                </div>
+                <button className={styles.btnLogout} onClick={() => signOut({ redirectUrl: "/" })}>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+                    <polyline points="16 17 21 12 16 7" />
+                    <line x1="21" y1="12" x2="9" y2="12" />
+                  </svg>
+                  Log Out
+                </button>
+              </div>
+              <div className={styles.dangerItem}>
+                <div className={styles.dangerItemInfo}>
+                  <h4>Delete Account</h4>
+                  <p>Permanently delete your account and all data</p>
+                </div>
+                <button className={styles.btnDelete}>Delete Account</button>
+              </div>
+            </div>
+          </>
+        )}
+
+        {/* ── Team Tab ──────────────────────────────────── */}
+        {tab === "Team" && (
+          <>
+            {/* Org info card */}
+            <div className={styles.card}>
+              <h3 className={styles.cardTitle}>Team &amp; Organization</h3>
+              <p className={styles.teamDesc}>
+                Manage your workspace members, invite collaborators, and assign roles.
+              </p>
+
+              {!organization ? (
+                <div className={styles.teamEmpty}>
+                  <div className={styles.teamEmptyIcon}>👥</div>
+                  <h4>No organization yet</h4>
+                  <p>Create or join an organization using the switcher in the sidebar to manage your team here.</p>
+                </div>
+              ) : (
+                <>
+                  {/* Org header */}
+                  <div className={styles.orgHeader}>
+                    {organization.imageUrl ? (
+                      <img src={organization.imageUrl} alt={organization.name} className={styles.orgAvatar} />
+                    ) : (
+                      <div className={styles.orgAvatarFallback}>
+                        {organization.name?.[0]?.toUpperCase() || "O"}
+                      </div>
+                    )}
+                    <div>
+                      <div className={styles.orgName}>{organization.name}</div>
+                      <div className={styles.orgSlug}>{organization.slug ? `@${organization.slug}` : ""}</div>
+                    </div>
+                  </div>
+                </>
+              )}
+            </div>
+
+            {/* Members card */}
+            {organization && (
+              <div className={styles.card}>
+                <div className={styles.cardTitleRow}>
+                  <h3 className={styles.cardTitle}>Members</h3>
+                  <span className={styles.memberCount}>
+                    {teamMembers.length} member{teamMembers.length !== 1 ? "s" : ""}
+                  </span>
+                </div>
+
+                {/* Invite form */}
+                <div className={styles.inviteRow}>
+                  <input
+                    className={styles.formInput}
+                    type="email"
+                    placeholder="Email address"
+                    value={inviteEmail}
+                    onChange={(e) => setInviteEmail(e.target.value)}
+                  />
+                  <select
+                    className={styles.roleSelect}
+                    value={inviteRole}
+                    onChange={(e) => setInviteRole(e.target.value as "org:admin" | "org:member")}
+                  >
+                    <option value="org:member">Member</option>
+                    <option value="org:admin">Admin</option>
+                  </select>
+                  <button
+                    className={styles.btnSave}
+                    disabled={inviting || !inviteEmail}
+                    onClick={async () => {
+                      try {
+                        setInviting(true);
+                        await organization.inviteMember({ emailAddress: inviteEmail, role: inviteRole });
+                        setInviteEmail("");
+                        await loadTeamData();
+                        showToast("success", "Invitation sent!");
+                      } catch {
+                        showToast("error", "Failed to send invitation");
+                      } finally {
+                        setInviting(false);
+                      }
+                    }}
+                  >
+                    {inviting ? "Sending..." : "Invite"}
+                  </button>
+                </div>
+
+                {/* Pending invitations */}
+                {pendingInvites.length > 0 && (
+                  <div className={styles.pendingSection}>
+                    <div className={styles.pendingSectionTitle}>Pending Invitations</div>
+                    {pendingInvites.map((inv) => (
+                      <div key={inv.id} className={styles.memberRow}>
+                        <div className={styles.memberAvatarFallback}>✉</div>
+                        <div className={styles.memberInfo}>
+                          <div className={styles.memberName}>{inv.emailAddress}</div>
+                          <div className={styles.memberRole}>Invited · {inv.role?.replace("org:", "")}</div>
+                        </div>
+                        <button
+                          className={styles.btnDisconnect}
+                          onClick={async () => {
+                            try {
+                              await inv.revoke();
+                              await loadTeamData();
+                              showToast("success", "Invitation revoked");
+                            } catch {
+                              showToast("error", "Failed to revoke");
+                            }
+                          }}
+                        >
+                          Revoke
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Member list */}
+                <div className={styles.memberList}>
+                  {teamMembers.map((m) => (
+                    <div key={m.id} className={styles.memberRow}>
+                      {m.publicUserData?.imageUrl ? (
+                        <img src={m.publicUserData.imageUrl} alt="" className={styles.memberAvatar} />
+                      ) : (
+                        <div className={styles.memberAvatarFallback}>
+                          {m.publicUserData?.firstName?.[0]?.toUpperCase() || "?"}
+                        </div>
+                      )}
+                      <div className={styles.memberInfo}>
+                        <div className={styles.memberName}>
+                          {m.publicUserData?.firstName} {m.publicUserData?.lastName}
+                        </div>
+                        <div className={styles.memberRole}>
+                          {m.publicUserData?.identifier}
+                        </div>
+                      </div>
+                      <div className={styles.memberActions}>
+                        <select
+                          className={styles.roleSelect}
+                          value={m.role}
+                          onChange={async (e) => {
+                            try {
+                              await m.update({ role: e.target.value });
+                              await loadTeamData();
+                              showToast("success", "Role updated");
+                            } catch {
+                              showToast("error", "Failed to update role");
+                            }
+                          }}
+                        >
+                          <option value="org:admin">Admin</option>
+                          <option value="org:member">Member</option>
+                        </select>
+                        <button
+                          className={styles.btnRemoveMember}
+                          title="Remove member"
+                          onClick={async () => {
+                            try {
+                              await m.destroy();
+                              await loadTeamData();
+                              showToast("success", "Member removed");
+                            } catch {
+                              showToast("error", "Cannot remove this member");
+                            }
+                          }}
+                        >
+                          ✕
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </>
+        )}
+
+        {/* ── Platforms Tab ──────────────────────────────── */}
+        {tab === "Platforms" && (
+          <div className={styles.card}>
+            <h3 className={styles.cardTitle}>Connected Platforms</h3>
+
+            {PLATFORMS.map((p) => {
+              const conn = connections[p.name];
+              return (
+                <div key={p.name} className={styles.platformItem}>
+                  <div
+                    className={styles.platformIcon}
+                    style={{ background: p.bg, color: p.color }}
+                  >
+                    {p.icon}
+                  </div>
+                  <div className={styles.platformInfo}>
+                    <div className={styles.platformName}>{p.name}</div>
+                    <div className={styles.platformHandle}>
+                      {conn?.connected ? `Connected as ${conn.handle}` : "Not connected"}
+                    </div>
+                  </div>
+                  <div className={styles.platformStatus}>
+                    {conn?.connected ? (
+                      <>
+                        <span className={`${styles.statusBadge} ${styles.statusConnected}`}>
+                          ✓ Connected
+                        </span>
+                        <button
+                          className={styles.btnDisconnect}
+                          onClick={() => handleTogglePlatform(p.name)}
+                        >
+                          Disconnect
+                        </button>
+                      </>
+                    ) : (
+                      <button
+                        className={styles.btnConnect}
+                        onClick={() => handleTogglePlatform(p.name)}
+                      >
+                        Connect
+                      </button>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+
+            <div className={styles.permissionsBox}>
+              <div className={styles.permissionsTitle}>OAuth Permissions</div>
+              <ul className={styles.permissionsList}>
+                <li><span className={styles.permGreen}>✓</span> Publish posts on your behalf</li>
+                <li><span className={styles.permGreen}>✓</span> Read engagement metrics and analytics</li>
+                <li><span className={styles.permGreen}>✓</span> Manage scheduled posts</li>
+                <li><span className={styles.permRed}>✗</span> We never access your private messages</li>
+                <li><span className={styles.permRed}>✗</span> We never modify your account settings</li>
               </ul>
             </div>
           </div>
         )}
+
+        {/* ── Notifications Tab ─────────────────────────── */}
         {tab === "Notifications" && (
-          <div>
-            <div style={{ fontWeight: 700, fontSize: "1.25rem", marginBottom: 22, color: "#181b20" }}>Notification Preferences</div>
-            <div style={{ marginBottom: 18 }}>
-              <div style={{ fontWeight: 700, color: "#181b20", fontSize: 16 }}>Email Notifications</div>
-              <div style={{ color: "#888", fontSize: 14, marginBottom: 8 }}>Receive email updates about your posts and engagement</div>
-              <input type="checkbox" checked={emailPrefs.scheduled} onChange={e => setEmailPrefs(p => ({ ...p, scheduled: e.target.checked }))} /> When a scheduled post is published
-              <br />
-              <input type="checkbox" checked={emailPrefs.engagement} onChange={e => setEmailPrefs(p => ({ ...p, engagement: e.target.checked }))} /> When you reach engagement milestones
-              <br />
-              <input type="checkbox" checked={emailPrefs.followers} onChange={e => setEmailPrefs(p => ({ ...p, followers: e.target.checked }))} /> When you gain new followers
-              <br />
-              <input type="checkbox" checked={emailPrefs.tips} onChange={e => setEmailPrefs(p => ({ ...p, tips: e.target.checked }))} /> Growth tips and best practices
+          <div className={styles.card}>
+            <h3 className={styles.cardTitle}>Notification Preferences</h3>
+
+            <div className={styles.notifSection}>
+              <div className={styles.notifSectionTitle}>Email Notifications</div>
+              <div className={styles.notifSectionDesc}>
+                Receive email updates about your posts and engagement
+              </div>
+              {[
+                { key: "scheduled" as const, label: "When a scheduled post is published" },
+                { key: "engagement" as const, label: "When you reach engagement milestones" },
+                { key: "followers" as const, label: "When you gain new followers" },
+                { key: "tips" as const, label: "Growth tips and best practices" },
+              ].map(({ key, label }) => (
+                <div key={key} className={styles.toggleRow}>
+                  <span className={styles.toggleLabel}>{label}</span>
+                  <input
+                    type="checkbox"
+                    className={styles.toggle}
+                    checked={notifPrefs[key]}
+                    onChange={() => setNotifPrefs((p) => ({ ...p, [key]: !p[key] }))}
+                  />
+                </div>
+              ))}
             </div>
-            <div style={{ fontWeight: 700, marginBottom: 8, color: "#181b20", fontSize: 16 }}>Push Notifications</div>
-            <div style={{ color: "#888", fontSize: 14, marginBottom: 8 }}>Get notified about important updates and milestones</div>
-            <input type="checkbox" /> Enable push notifications
-            <div style={{ fontWeight: 700, marginTop: 18, marginBottom: 8, color: "#181b20", fontSize: 16 }}>Weekly Report</div>
-            <div style={{ color: "#888", fontSize: 14, marginBottom: 8 }}>Receive a weekly summary of your analytics and growth</div>
-            <input type="checkbox" /> Enable weekly report
+
+            <div className={styles.notifSection}>
+              <div className={styles.notifSectionTitle}>Push Notifications</div>
+              <div className={styles.notifSectionDesc}>
+                Get notified about important updates and milestones
+              </div>
+              <div className={styles.toggleRow}>
+                <span className={styles.toggleLabel}>Enable push notifications</span>
+                <input
+                  type="checkbox"
+                  className={styles.toggle}
+                  checked={notifPrefs.push}
+                  onChange={() => setNotifPrefs((p) => ({ ...p, push: !p.push }))}
+                />
+              </div>
+            </div>
+
+            <div className={styles.notifSection}>
+              <div className={styles.notifSectionTitle}>Weekly Report</div>
+              <div className={styles.notifSectionDesc}>
+                Receive a weekly summary of your analytics and growth
+              </div>
+              <div className={styles.toggleRow}>
+                <span className={styles.toggleLabel}>Enable weekly report</span>
+                <input
+                  type="checkbox"
+                  className={styles.toggle}
+                  checked={notifPrefs.weeklyReport}
+                  onChange={() => setNotifPrefs((p) => ({ ...p, weeklyReport: !p.weeklyReport }))}
+                />
+              </div>
+            </div>
           </div>
         )}
+
+        {/* ── Billing Tab ───────────────────────────────── */}
         {tab === "Billing" && (
-          <div>
-            <div style={{ fontWeight: 700, fontSize: "1.25rem", marginBottom: 22, color: "#181b20" }}>Current Plan</div>
-            <div style={{ background: "#fafbfc", borderRadius: 16, padding: 40, border: "2px solid #a259f7", marginBottom: 28, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 24 }}>
-              <div>
-                <div style={{ fontWeight: 700, fontSize: "1.3rem", color: "#7c3aed", marginBottom: 6, letterSpacing: 0.2 }}>{plan.name}</div>
-                <div style={{ color: "#888", fontSize: 15, marginBottom: 12 }}>For growing ministries</div>
-                <ul style={{ color: "#222", fontSize: 15, paddingLeft: 18, margin: 0 }}>
-                  {plan.features.map(f => <li key={f}>✓ {f}</li>)}
+          <div className={styles.card}>
+            <h3 className={styles.cardTitle}>Current Plan</h3>
+
+            <div className={styles.planCard}>
+              <div className={styles.planInfo}>
+                <h3>{PLAN.name}</h3>
+                <p>{PLAN.tagline}</p>
+                <ul className={styles.planFeatures}>
+                  {PLAN.features.map((f) => (
+                    <li key={f}><span className={styles.permGreen}>✓</span> {f}</li>
+                  ))}
                 </ul>
               </div>
-              <div style={{ textAlign: "right" }}>
-                <div style={{ fontWeight: 700, fontSize: "2rem", color: "#a259f7" }}>${plan.price}</div>
-                <div style={{ color: "#888", fontSize: 15 }}>/month</div>
-                <button style={{ marginTop: 18, padding: "8px 18px", borderRadius: 8, border: "1.5px solid #a259f7", background: "#fff", fontWeight: 500, color: "#a259f7", cursor: "pointer" }}>Change Plan</button>
+              <div className={styles.planPriceBlock}>
+                <div className={styles.planPrice}>${PLAN.price}</div>
+                <div className={styles.planPeriod}>/month</div>
+                <button className={styles.btnChangePlan}>Change Plan</button>
               </div>
             </div>
-            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 18 }}>
-              <div>Next billing date</div>
-              <div>{plan.nextBilling}</div>
+
+            <div className={styles.billingMeta}>
+              <div className={styles.billingMetaRow}>
+                <span className={styles.billingMetaLabel}>Next billing date</span>
+                <span className={styles.billingMetaValue}>{PLAN.nextBilling}</span>
+              </div>
+              <div className={styles.billingMetaRow}>
+                <span className={styles.billingMetaLabel}>Payment method</span>
+                <span className={styles.billingMetaValue}>•••• •••• •••• {PLAN.card}</span>
+              </div>
             </div>
-            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 18 }}>
-              <div>Payment method</div>
-              <div>•••• •••• •••• {plan.card}</div>
-            </div>
-            <div style={{ fontWeight: 700, marginBottom: 12, color: "#181b20", fontSize: "1.15rem" }}>Billing History</div>
-            <div style={{ background: "#fafbfc", borderRadius: 12, padding: 24 }}>
-              {plan.history.map((h, i) => (
-                <div key={i} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 8 }}>
-                  <div>{h.date}</div>
-                  <div style={{ fontWeight: 600 }}>${h.amount.toFixed(2)} <span style={{ color: "#10b981", marginLeft: 8 }}>Paid</span></div>
-                  <button style={{ padding: "6px 14px", borderRadius: 8, border: "1.5px solid #e5e7eb", background: "#fff", fontWeight: 500, cursor: "pointer" }}>Download</button>
+
+            <div className={styles.historyTitle}>Billing History</div>
+            <div className={styles.historyTable}>
+              {PLAN.history.map((h, i) => (
+                <div key={i} className={styles.historyRow}>
+                  <span className={styles.historyDate}>{h.date}</span>
+                  <span className={styles.historyAmount}>
+                    ${h.amount.toFixed(2)}
+                    <span className={styles.historyBadge}>Paid</span>
+                  </span>
+                  <button className={styles.btnDownload}>Download</button>
                 </div>
               ))}
             </div>
           </div>
         )}
       </div>
-      {/* Security & Danger Zone */}
-      {tab === "Profile" && (
-        <div className={styles.settingsCard}>
-          <div style={{ fontWeight: 700, fontSize: "1.25rem", marginBottom: 22, color: "#181b20" }}>Security</div>
-          <div style={{ display: "flex", gap: 24, marginBottom: 18 }}>
-            <div style={{ flex: 1 }}>
-              <div style={{ color: "#181b20", fontSize: 15, marginBottom: 4, fontWeight: 700 }}>Current Password</div>
-              <input type="password" value={passwords.current} onChange={e => setPasswords(p => ({ ...p, current: e.target.value }))} style={{ width: "100%", borderRadius: 8, border: "none", background: "#f3f4f6", padding: "12px 14px", fontSize: "1.08rem", marginBottom: 8, color: "#181b20" }} />
-            </div>
-            <div style={{ flex: 1 }}>
-              <div style={{ color: "#181b20", fontSize: 15, marginBottom: 4, fontWeight: 700 }}>New Password</div>
-              <input type="password" value={passwords.new} onChange={e => setPasswords(p => ({ ...p, new: e.target.value }))} style={{ width: "100%", borderRadius: 8, border: "none", background: "#f3f4f6", padding: "12px 14px", fontSize: "1.08rem", marginBottom: 8, color: "#181b20" }} />
-            </div>
-            <div style={{ flex: 1 }}>
-              <div style={{ color: "#181b20", fontSize: 15, marginBottom: 4, fontWeight: 700 }}>Confirm New Password</div>
-              <input type="password" value={passwords.confirm} onChange={e => setPasswords(p => ({ ...p, confirm: e.target.value }))} style={{ width: "100%", borderRadius: 8, border: "none", background: "#f3f4f6", padding: "12px 14px", fontSize: "1.08rem", color: "#181b20" }} />
-            </div>
-          </div>
-          <button style={{ padding: "10px 24px", borderRadius: 8, border: "1.5px solid #e5e7eb", background: "#fff", fontWeight: 700, color: "#181b20", cursor: "pointer", marginBottom: 28 }}>Update Password</button>
-          <div style={{ background: "#fff0f0", border: "1.5px solid #fca5a5", borderRadius: 12, padding: 24, marginTop: 24 }}>
-            <div style={{ color: "#e11d48", fontWeight: 700, marginBottom: 12, fontSize: "1.15rem", marginTop: 32 }}>Danger Zone</div>
-            <div style={{ display: "flex", alignItems: "center", gap: 24, marginBottom: 12 }}>
-              <button style={{ padding: "10px 24px", borderRadius: 8, border: "1.5px solid #e5e7eb", background: "#fff", fontWeight: 700, color: "#181b20", cursor: "pointer", display: "flex", alignItems: "center", gap: 8 }}>
-                <span style={{ fontSize: 18 }}>↩️</span> Log Out
-              </button>
-              <button style={{ padding: "10px 24px", borderRadius: 8, border: "none", background: "#e11d48", color: "#fff", fontWeight: 700, cursor: "pointer", display: "flex", alignItems: "center", gap: 8 }}>
-                <span style={{ fontSize: 18 }}>🗑️</span> Delete Account
-              </button>
-            </div>
-            <div style={{ color: "#888", fontSize: 14 }}>Sign out of your FaithReach account or permanently delete your account and all data</div>
-          </div>
+
+      {/* Toast */}
+      {toast && (
+        <div className={`${styles.toast} ${toast.type === "success" ? styles.toastSuccess : styles.toastError}`}>
+          {toast.msg}
         </div>
       )}
     </div>

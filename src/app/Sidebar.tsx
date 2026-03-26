@@ -1,6 +1,6 @@
 "use client";
 import Link from "next/link";
-import { useUser } from "@clerk/nextjs";
+import { useUser, OrganizationSwitcher } from "@clerk/nextjs";
 import Image from "next/image";
 import { useState } from "react";
 
@@ -56,6 +56,28 @@ export default function Sidebar() {
               &times;
             </button>
           </div>
+          {isSignedIn && (
+            <div className="sidebar-org-switcher">
+              <OrganizationSwitcher
+                appearance={{
+                  elements: {
+                    rootBox: { width: "100%" },
+                    organizationSwitcherTrigger: {
+                      width: "100%",
+                      padding: "8px 12px",
+                      borderRadius: "10px",
+                      border: "1.5px solid #e2e8f0",
+                      background: "#f8f9fb",
+                      justifyContent: "space-between",
+                    },
+                  },
+                }}
+                afterCreateOrganizationUrl="/dashboard"
+                afterLeaveOrganizationUrl="/dashboard"
+                afterSelectOrganizationUrl="/dashboard"
+              />
+            </div>
+          )}
           <nav className="sidebar-nav" style={{ flex: 1 }}>
             {navItems.map((item) => (
               <Link
@@ -91,6 +113,28 @@ export default function Sidebar() {
       {/* Sidebar (desktop) */}
       <aside className="sidebar">
         <div className="sidebar-logo">FaithReach</div>
+        {isSignedIn && (
+          <div className="sidebar-org-switcher">
+            <OrganizationSwitcher
+              appearance={{
+                elements: {
+                  rootBox: { width: "100%" },
+                  organizationSwitcherTrigger: {
+                    width: "100%",
+                    padding: "8px 12px",
+                    borderRadius: "10px",
+                    border: "1.5px solid #e2e8f0",
+                    background: "#f8f9fb",
+                    justifyContent: "space-between",
+                  },
+                },
+              }}
+              afterCreateOrganizationUrl="/dashboard"
+              afterLeaveOrganizationUrl="/dashboard"
+              afterSelectOrganizationUrl="/dashboard"
+            />
+          </div>
+        )}
         <nav className="sidebar-nav">
           {navItems.map((item) => (
             <Link key={item.label} href={item.href} className="sidebar-link">
@@ -135,7 +179,10 @@ export default function Sidebar() {
           font-size: 1.5rem;
           font-weight: 700;
           color: #7c3aed;
-          padding: 0 32px 32px 32px;
+          padding: 0 32px 16px 32px;
+        }
+        .sidebar-org-switcher {
+          padding: 0 16px 16px;
         }
         .sidebar-nav {
           display: flex;
