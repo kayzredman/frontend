@@ -28,11 +28,11 @@ export default function UserMenu() {
   );
 
   if (isSignedIn) {
-    return <div style={{ position: "fixed", top: 16, right: 24, zIndex: 200 }}><UserButton afterSignOutUrl="/" /></div>;
+    return <div style={{ position: "fixed", top: 16, right: 24, zIndex: 200 }}><UserButton /></div>;
   }
 
   if (!isHome) {
-    return <div style={{ position: "fixed", top: 16, right: 24, zIndex: 200 }}><SignInButton mode="modal" afterSignInUrl="/dashboard">{signInButtonChild}</SignInButton></div>;
+    return <div style={{ position: "fixed", top: 16, right: 24, zIndex: 200 }}><SignInButton mode="modal">{signInButtonChild}</SignInButton></div>;
   }
 
   return null;

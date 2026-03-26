@@ -1,77 +1,270 @@
 "use client";
 
-// Dummy user data
-const user = {
-  name: "Pastor John Smith",
-  email: "pastor.john@faithchurch.org",
-  role: "Content Creator",
-  organization: "Faith Church",
-  bio: "Tell us about your ministry...",
-  photo: "", // Placeholder, could use a default avatar
-  joined: "January 2024",
-  lastActive: "March 23, 2026",
-  location: "Dallas, TX",
-  posts: 128,
-  followers: 26710,
-  engagement: "5.7%",
+import { useEffect, useState, useCallback } from "react";
+import Image from "next/image";
+import { useAuth, useUser } from "@clerk/nextjs";
+import styles from "./profile.module.css";
+
+type BackendUser = {
+  name: string;
+  email: string;
+  imageUrl?: string;
+  role?: string;
+  organization?: string;
+  bio?: string;
+  location?: string;
+  createdAt?: string;
+  updatedAt?: string;
+};
+
+type EditFields = {
+  name: string;
+  bio: string;
+  location: string;
+  organization: string;
 };
 
 export default function ProfilePage() {
-  return (
-    <div style={{ padding: "40px 0", background: "#fff", minHeight: "100vh", display: "flex", flexDirection: "column", alignItems: "center" }}>
-      <h1 style={{ fontSize: "2.5rem", fontWeight: 700, marginBottom: 8, color: "#181b20" }}>Profile</h1>
-      <p style={{ color: "#181b20", marginBottom: 32, fontSize: "1.2rem", fontWeight: 500 }}>
-        View your account details and activity
-      </p>
-      <div style={{ width: "100%", maxWidth: 900, background: "#fff", borderRadius: 24, boxShadow: "0 2px 8px 0 rgba(44, 62, 80, 0.10)", padding: 40, marginBottom: 40, display: "flex", gap: 40, alignItems: "flex-start" }}>
-        {/* Profile Photo and Basic Info */}
-        <div style={{ minWidth: 180, display: "flex", flexDirection: "column", alignItems: "center", gap: 18 }}>
-          <div style={{ width: 120, height: 120, borderRadius: "50%", background: "#f3f4f6", overflow: "hidden", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 48, color: "#a78bfa", fontWeight: 700, marginBottom: 8 }}>
-            {user.photo ? <img src={user.photo} alt="Profile" style={{ width: "100%", height: "100%", objectFit: "cover" }} /> : <span>👤</span>}
-          </div>
-          <div style={{ fontWeight: 700, fontSize: 22, marginBottom: 2, color: "#181b20" }}>{user.name}</div>
-          <div style={{ color: "#181b20", fontSize: 15, fontWeight: 600 }}>{user.role}</div>
-          <div style={{ color: "#7c3aed", fontWeight: 700, fontSize: 15, marginTop: 4 }}>{user.organization}</div>
+  const { isLoaded, isSignedIn, user: clerkUser } = useUser();
+  const { getToken, isLoaded: authLoaded } = useAuth();
+  const [backendUser, setBackendUser] = useState<BackendUser | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [editMode, setEditMode] = useState(false);
+  const [editFields, setEditFields] = useState<EditFields>({ name: "", bio: "", location: "", organization: "" });
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState("");
+
+  const fetchBackendUser = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError("");
+      const token = await getToken();
+      if (!token) throw new Error("Could not get auth token. Please sign in again.");
+      const res = await fetch("/api/user/me", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) throw new Error("Failed to fetch user info");
+      const data = await res.json();
+      setBackendUser(data);
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : "Unknown error");
+    } finally {
+      setLoading(false);
+    }
+  }, [getToken]);
+
+  useEffect(() => {
+    if (!isLoaded || !authLoaded || !isSignedIn || !clerkUser) return;
+    fetchBackendUser();
+  }, [isLoaded, authLoaded, isSignedIn, clerkUser, fetchBackendUser]);
+
+  const handleEdit = () => {
+    if (!backendUser) return;
+    setEditFields({
+      name: backendUser.name || "",
+      bio: backendUser.bio || "",
+      location: backendUser.location || "",
+      organization: backendUser.organization || "",
+    });
+    setEditMode(true);
+    setSaveError("");
+  };
+
+  const handleSave = async () => {
+    setSaving(true);
+    setSaveError("");
+    try {
+      const token = await getToken();
+      const res = await fetch("/api/user/me", {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify(editFields),
+      });
+      if (!res.ok) throw new Error("Failed to save changes");
+      const updated = await res.json();
+      setBackendUser(updated);
+      setEditMode(false);
+    } catch (e: unknown) {
+      setSaveError(e instanceof Error ? e.message : "Unknown error");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const formatDate = (dateStr?: string) => {
+    if (!dateStr) return "—";
+    return new Date(dateStr).toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    });
+  };
+
+  if (!isLoaded || loading) {
+    return (
+      <div className={styles.profilePage}>
+        <div className={styles.loadingState}>
+          <div className={styles.spinner} />
+          <p>Loading profile...</p>
         </div>
-        {/* Details Card */}
-        <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 24 }}>
-          <div style={{ display: "flex", gap: 24 }}>
-            <div style={{ flex: 1 }}>
-              <div style={{ color: "#181b20", fontWeight: 700, fontSize: 15, marginBottom: 6 }}>Email</div>
-              <div style={{ background: "#f3f4f6", borderRadius: 10, padding: "12px 18px", fontSize: 17, fontWeight: 500 }}>{user.email}</div>
-            </div>
-            <div style={{ flex: 1 }}>
-              <div style={{ color: "#181b20", fontWeight: 700, fontSize: 15, marginBottom: 6 }}>Location</div>
-              <div style={{ background: "#f3f4f6", borderRadius: 10, padding: "12px 18px", fontSize: 17, fontWeight: 500 }}>{user.location}</div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className={styles.profilePage}>
+        <div className={styles.loadingState}>
+          <p className={styles.errorText}>{error}</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!isSignedIn || !clerkUser) {
+    return (
+      <div className={styles.profilePage}>
+        <div className={styles.loadingState}>
+          <p className={styles.errorText}>You are not signed in.</p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className={styles.profilePage}>
+      <div className={styles.profileContainer}>
+        <div className={styles.profileHeader}>
+          <h1>Profile</h1>
+          <p>Manage your account details</p>
+        </div>
+
+        <div className={styles.profileCard}>
+          <div className={styles.cardTop}>
+            <div className={styles.avatarWrapper}>
+              {clerkUser.imageUrl ? (
+                <Image
+                  src={clerkUser.imageUrl}
+                  alt="Profile"
+                  width={96}
+                  height={96}
+                  unoptimized
+                />
+              ) : (
+                <div className={styles.avatarFallback}>
+                  {(backendUser?.name || clerkUser.fullName || "?")[0].toUpperCase()}
+                </div>
+              )}
             </div>
           </div>
-          <div style={{ display: "flex", gap: 24 }}>
-            <div style={{ flex: 1 }}>
-              <div style={{ color: "#181b20", fontWeight: 700, fontSize: 15, marginBottom: 6 }}>Joined</div>
-              <div style={{ background: "#f3f4f6", borderRadius: 10, padding: "12px 18px", fontSize: 17, fontWeight: 500 }}>{user.joined}</div>
+
+          <div className={styles.cardBody}>
+            <div className={styles.nameRow}>
+              <div className={styles.nameBlock}>
+                <h2>{clerkUser.fullName || backendUser?.name || "—"}</h2>
+                <p>{clerkUser.emailAddresses?.[0]?.emailAddress || backendUser?.email}</p>
+                {backendUser?.role && (
+                  <span className={styles.roleBadge}>{backendUser.role}</span>
+                )}
+              </div>
+              {!editMode && (
+                <button className={styles.editBtn} onClick={handleEdit}>
+                  Edit Profile
+                </button>
+              )}
             </div>
-            <div style={{ flex: 1 }}>
-              <div style={{ color: "#181b20", fontWeight: 700, fontSize: 15, marginBottom: 6 }}>Last Active</div>
-              <div style={{ background: "#f3f4f6", borderRadius: 10, padding: "12px 18px", fontSize: 17, fontWeight: 500 }}>{user.lastActive}</div>
-            </div>
-          </div>
-          <div>
-            <div style={{ color: "#181b20", fontWeight: 700, fontSize: 15, marginBottom: 6 }}>Bio</div>
-            <div style={{ background: "#f3f4f6", borderRadius: 10, padding: "12px 18px", fontSize: 17, fontWeight: 500 }}>{user.bio}</div>
-          </div>
-          <div style={{ display: "flex", gap: 24 }}>
-            <div style={{ flex: 1 }}>
-              <div style={{ color: "#181b20", fontWeight: 700, fontSize: 15, marginBottom: 6 }}>Posts</div>
-              <div style={{ background: "#f3f4f6", borderRadius: 10, padding: "12px 18px", fontSize: 17, fontWeight: 500 }}>{user.posts}</div>
-            </div>
-            <div style={{ flex: 1 }}>
-              <div style={{ color: "#181b20", fontWeight: 700, fontSize: 15, marginBottom: 6 }}>Followers</div>
-              <div style={{ background: "#f3f4f6", borderRadius: 10, padding: "12px 18px", fontSize: 17, fontWeight: 500 }}>{user.followers.toLocaleString()}</div>
-            </div>
-            <div style={{ flex: 1 }}>
-              <div style={{ color: "#181b20", fontWeight: 700, fontSize: 15, marginBottom: 6 }}>Engagement Rate</div>
-              <div style={{ background: "#f3f4f6", borderRadius: 10, padding: "12px 18px", fontSize: 17, fontWeight: 500 }}>{user.engagement}</div>
-            </div>
+
+            {editMode ? (
+              <>
+                <div className={styles.infoGrid}>
+                  <div className={styles.infoItem}>
+                    <label>Name</label>
+                    <input
+                      className={styles.inputField}
+                      value={editFields.name}
+                      onChange={(e) => setEditFields({ ...editFields, name: e.target.value })}
+                    />
+                  </div>
+                  <div className={styles.infoItem}>
+                    <label>Location</label>
+                    <input
+                      className={styles.inputField}
+                      value={editFields.location}
+                      onChange={(e) => setEditFields({ ...editFields, location: e.target.value })}
+                      placeholder="City, Country"
+                    />
+                  </div>
+                  <div className={styles.infoItem}>
+                    <label>Organization</label>
+                    <input
+                      className={styles.inputField}
+                      value={editFields.organization}
+                      onChange={(e) => setEditFields({ ...editFields, organization: e.target.value })}
+                      placeholder="Church or ministry name"
+                    />
+                  </div>
+                </div>
+                <div className={styles.bioSection}>
+                  <label>Bio</label>
+                  <textarea
+                    className={styles.textareaField}
+                    value={editFields.bio}
+                    onChange={(e) => setEditFields({ ...editFields, bio: e.target.value })}
+                    placeholder="Tell us about yourself..."
+                  />
+                </div>
+                <div className={styles.editActions}>
+                  <button className={styles.saveBtn} onClick={handleSave} disabled={saving}>
+                    {saving ? "Saving..." : "Save Changes"}
+                  </button>
+                  <button
+                    className={styles.cancelBtn}
+                    onClick={() => setEditMode(false)}
+                    disabled={saving}
+                  >
+                    Cancel
+                  </button>
+                  {saveError && <span className={styles.errorText}>{saveError}</span>}
+                </div>
+              </>
+            ) : (
+              <>
+                <div className={styles.infoGrid}>
+                  <div className={styles.infoItem}>
+                    <label>Name</label>
+                    <span>{backendUser?.name || "—"}</span>
+                  </div>
+                  <div className={styles.infoItem}>
+                    <label>Email</label>
+                    <span>{clerkUser.emailAddresses?.[0]?.emailAddress || backendUser?.email}</span>
+                  </div>
+                  <div className={styles.infoItem}>
+                    <label>Location</label>
+                    <span>{backendUser?.location || "—"}</span>
+                  </div>
+                  <div className={styles.infoItem}>
+                    <label>Organization</label>
+                    <span>{backendUser?.organization || "—"}</span>
+                  </div>
+                </div>
+                <div className={styles.bioSection}>
+                  <label>Bio</label>
+                  <p>{backendUser?.bio || "No bio added yet."}</p>
+                </div>
+                <div className={styles.metaRow}>
+                  <span className={styles.metaItem}>
+                    Joined <strong>{formatDate(backendUser?.createdAt)}</strong>
+                  </span>
+                  <span className={styles.metaItem}>
+                    Updated <strong>{formatDate(backendUser?.updatedAt)}</strong>
+                  </span>
+                </div>
+              </>
+            )}
           </div>
         </div>
       </div>

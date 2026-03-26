@@ -11,7 +11,7 @@ export default function DashboardPage() {
   // Redirect to sign-in if not signed in
   useEffect(() => {
     if (!isSignedIn && typeof window !== 'undefined') {
-      window.location.href = '/sign-in/clerk';
+      window.location.href = '/sign-in';
     }
   }, [isSignedIn]);
   if (!isSignedIn) {
