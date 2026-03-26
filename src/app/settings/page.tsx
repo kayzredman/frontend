@@ -112,6 +112,7 @@ export default function SettingsPage() {
 
   // Team / Org state
   const { organization, membership } = useOrganization();
+  const isAdmin = membership?.role === "org:admin";
   const [inviteEmail, setInviteEmail] = useState("");
   const [inviteRole, setInviteRole] = useState<"org:admin" | "org:member">("org:member");
   const [inviting, setInviting] = useState(false);
@@ -270,7 +271,9 @@ export default function SettingsPage() {
 
         {/* Tabs */}
         <div className={styles.tabs}>
-          {(["Profile", "Team", "Platforms", "Notifications", "Billing"] as Tab[]).map((t) => (
+          {(["Profile", "Team", "Platforms", "Notifications", "Billing"] as Tab[])
+            .filter((t) => isAdmin || t === "Profile" || t === "Notifications")
+            .map((t) => (
             <button
               key={t}
               onClick={() => setTab(t)}
@@ -333,27 +336,11 @@ export default function SettingsPage() {
                 </div>
                 <div className={styles.formGroup}>
                   <label className={styles.formLabel}>Role</label>
-                  {editMode ? (
-                    <input
-                      className={styles.formInput}
-                      value={profile.role}
-                      onChange={(e) => setProfile((p) => ({ ...p, role: e.target.value }))}
-                    />
-                  ) : (
-                    <div className={styles.formValue}>{profile.role || "—"}</div>
-                  )}
+                  <div className={styles.formValue}>{isAdmin ? "Admin" : membership?.role === "org:member" ? "Member" : profile.role || "—"}</div>
                 </div>
                 <div className={styles.formGroup}>
                   <label className={styles.formLabel}>Organization</label>
-                  {editMode ? (
-                    <input
-                      className={styles.formInput}
-                      value={profile.organization}
-                      onChange={(e) => setProfile((p) => ({ ...p, organization: e.target.value }))}
-                    />
-                  ) : (
-                    <div className={styles.formValue}>{profile.organization || "—"}</div>
-                  )}
+                  <div className={styles.formValue}>{organization?.name || profile.organization || "—"}</div>
                 </div>
                 <div className={styles.formGroup}>
                   <label className={styles.formLabel}>Location</label>
@@ -429,13 +416,15 @@ export default function SettingsPage() {
                   Log Out
                 </button>
               </div>
-              <div className={styles.dangerItem}>
-                <div className={styles.dangerItemInfo}>
-                  <h4>Delete Account</h4>
-                  <p>Permanently delete your account and all data</p>
+              {isAdmin && (
+                <div className={styles.dangerItem}>
+                  <div className={styles.dangerItemInfo}>
+                    <h4>Delete Account</h4>
+                    <p>Permanently delete your account and all data</p>
+                  </div>
+                  <button className={styles.btnDelete}>Delete Account</button>
                 </div>
-                <button className={styles.btnDelete}>Delete Account</button>
-              </div>
+              )}
             </div>
           </>
         )}
@@ -486,43 +475,45 @@ export default function SettingsPage() {
                   </span>
                 </div>
 
-                {/* Invite form */}
-                <div className={styles.inviteRow}>
-                  <input
-                    className={styles.formInput}
-                    type="email"
-                    placeholder="Email address"
-                    value={inviteEmail}
-                    onChange={(e) => setInviteEmail(e.target.value)}
-                  />
-                  <select
-                    className={styles.roleSelect}
-                    value={inviteRole}
-                    onChange={(e) => setInviteRole(e.target.value as "org:admin" | "org:member")}
-                  >
-                    <option value="org:member">Member</option>
-                    <option value="org:admin">Admin</option>
-                  </select>
-                  <button
-                    className={styles.btnSave}
-                    disabled={inviting || !inviteEmail}
-                    onClick={async () => {
-                      try {
-                        setInviting(true);
-                        await organization.inviteMember({ emailAddress: inviteEmail, role: inviteRole });
-                        setInviteEmail("");
-                        await loadTeamData();
-                        showToast("success", "Invitation sent!");
-                      } catch {
-                        showToast("error", "Failed to send invitation");
-                      } finally {
-                        setInviting(false);
-                      }
-                    }}
-                  >
-                    {inviting ? "Sending..." : "Invite"}
-                  </button>
-                </div>
+                {/* Invite form — admin only */}
+                {isAdmin && (
+                  <div className={styles.inviteRow}>
+                    <input
+                      className={styles.formInput}
+                      type="email"
+                      placeholder="Email address"
+                      value={inviteEmail}
+                      onChange={(e) => setInviteEmail(e.target.value)}
+                    />
+                    <select
+                      className={styles.roleSelect}
+                      value={inviteRole}
+                      onChange={(e) => setInviteRole(e.target.value as "org:admin" | "org:member")}
+                    >
+                      <option value="org:member">Member</option>
+                      <option value="org:admin">Admin</option>
+                    </select>
+                    <button
+                      className={styles.btnSave}
+                      disabled={inviting || !inviteEmail}
+                      onClick={async () => {
+                        try {
+                          setInviting(true);
+                          await organization.inviteMember({ emailAddress: inviteEmail, role: inviteRole });
+                          setInviteEmail("");
+                          await loadTeamData();
+                          showToast("success", "Invitation sent!");
+                        } catch {
+                          showToast("error", "Failed to send invitation");
+                        } finally {
+                          setInviting(false);
+                        }
+                      }}
+                    >
+                      {inviting ? "Sending..." : "Invite"}
+                    </button>
+                  </div>
+                )}
 
                 {/* Pending invitations */}
                 {pendingInvites.length > 0 && (
@@ -535,20 +526,22 @@ export default function SettingsPage() {
                           <div className={styles.memberName}>{inv.emailAddress}</div>
                           <div className={styles.memberRole}>Invited · {inv.role?.replace("org:", "")}</div>
                         </div>
-                        <button
-                          className={styles.btnDisconnect}
-                          onClick={async () => {
-                            try {
-                              await inv.revoke();
-                              await loadTeamData();
-                              showToast("success", "Invitation revoked");
-                            } catch {
-                              showToast("error", "Failed to revoke");
-                            }
-                          }}
-                        >
-                          Revoke
-                        </button>
+                        {isAdmin && (
+                          <button
+                            className={styles.btnDisconnect}
+                            onClick={async () => {
+                              try {
+                                await inv.revoke();
+                                await loadTeamData();
+                                showToast("success", "Invitation revoked");
+                              } catch {
+                                showToast("error", "Failed to revoke");
+                              }
+                            }}
+                          >
+                            Revoke
+                          </button>
+                        )}
                       </div>
                     ))}
                   </div>
@@ -573,39 +566,45 @@ export default function SettingsPage() {
                           {m.publicUserData?.identifier}
                         </div>
                       </div>
-                      <div className={styles.memberActions}>
-                        <select
-                          className={styles.roleSelect}
-                          value={m.role}
-                          onChange={async (e) => {
-                            try {
-                              await m.update({ role: e.target.value });
-                              await loadTeamData();
-                              showToast("success", "Role updated");
-                            } catch {
-                              showToast("error", "Failed to update role");
-                            }
-                          }}
-                        >
-                          <option value="org:admin">Admin</option>
-                          <option value="org:member">Member</option>
-                        </select>
-                        <button
-                          className={styles.btnRemoveMember}
-                          title="Remove member"
-                          onClick={async () => {
-                            try {
-                              await m.destroy();
-                              await loadTeamData();
-                              showToast("success", "Member removed");
-                            } catch {
-                              showToast("error", "Cannot remove this member");
-                            }
-                          }}
-                        >
-                          ✕
-                        </button>
-                      </div>
+                      {isAdmin ? (
+                        <div className={styles.memberActions}>
+                          <select
+                            className={styles.roleSelect}
+                            value={m.role}
+                            onChange={async (e) => {
+                              try {
+                                await m.update({ role: e.target.value });
+                                await loadTeamData();
+                                showToast("success", "Role updated");
+                              } catch {
+                                showToast("error", "Failed to update role");
+                              }
+                            }}
+                          >
+                            <option value="org:admin">Admin</option>
+                            <option value="org:member">Member</option>
+                          </select>
+                          <button
+                            className={styles.btnRemoveMember}
+                            title="Remove member"
+                            onClick={async () => {
+                              try {
+                                await m.destroy();
+                                await loadTeamData();
+                                showToast("success", "Member removed");
+                              } catch {
+                                showToast("error", "Cannot remove this member");
+                              }
+                            }}
+                          >
+                            ✕
+                          </button>
+                        </div>
+                      ) : (
+                        <span className={styles.memberRole} style={{ marginLeft: "auto" }}>
+                          {m.role?.replace("org:", "")}
+                        </span>
+                      )}
                     </div>
                   ))}
                 </div>

@@ -1,6 +1,6 @@
 "use client";
 import Link from "next/link";
-import { useUser, OrganizationSwitcher } from "@clerk/nextjs";
+import { useUser, useOrganization, OrganizationSwitcher } from "@clerk/nextjs";
 import Image from "next/image";
 import { useState } from "react";
 
@@ -16,7 +16,11 @@ const navItems = [
 
 export default function Sidebar() {
   const { isSignedIn, user } = useUser();
+  const { membership } = useOrganization();
   const [open, setOpen] = useState(false);
+
+  const orgRole = membership?.role;
+  const roleLabel = orgRole === "org:admin" ? "Admin" : orgRole === "org:member" ? "Member" : "Content Creator";
 
   // Responsive: show sidebar on desktop, hamburger on mobile
   // Prevent background scroll when drawer is open
@@ -104,7 +108,7 @@ export default function Sidebar() {
               />
               <div>
                 <div className="sidebar-username">{user.fullName || user.username}</div>
-                <div className="sidebar-role">{typeof user.publicMetadata?.role === "string" ? user.publicMetadata.role : "Content Creator"}</div>
+                <div className="sidebar-role">{roleLabel}</div>
               </div>
             </div>
           )}
@@ -155,7 +159,7 @@ export default function Sidebar() {
             />
             <div>
               <div className="sidebar-username">{user.fullName || user.username}</div>
-              <div className="sidebar-role">{typeof user.publicMetadata?.role === "string" ? user.publicMetadata.role : "Content Creator"}</div>
+              <div className="sidebar-role">{roleLabel}</div>
             </div>
           </div>
         )}

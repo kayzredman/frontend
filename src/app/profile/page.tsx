@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useCallback } from "react";
 import Image from "next/image";
-import { useAuth, useUser } from "@clerk/nextjs";
+import { useAuth, useUser, useOrganization } from "@clerk/nextjs";
 import styles from "./profile.module.css";
 
 type BackendUser = {
@@ -27,6 +27,9 @@ type EditFields = {
 export default function ProfilePage() {
   const { isLoaded, isSignedIn, user: clerkUser } = useUser();
   const { getToken, isLoaded: authLoaded } = useAuth();
+  const { organization, membership } = useOrganization();
+  const orgRole = membership?.role === "org:admin" ? "Admin" : membership?.role === "org:member" ? "Member" : null;
+  const orgName = organization?.name || null;
   const [backendUser, setBackendUser] = useState<BackendUser | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -167,8 +170,8 @@ export default function ProfilePage() {
               <div className={styles.nameBlock}>
                 <h2>{clerkUser.fullName || backendUser?.name || "—"}</h2>
                 <p>{clerkUser.emailAddresses?.[0]?.emailAddress || backendUser?.email}</p>
-                {backendUser?.role && (
-                  <span className={styles.roleBadge}>{backendUser.role}</span>
+                {(orgRole || backendUser?.role) && (
+                  <span className={styles.roleBadge}>{orgRole || backendUser?.role}</span>
                 )}
               </div>
               {!editMode && (
@@ -200,12 +203,9 @@ export default function ProfilePage() {
                   </div>
                   <div className={styles.infoItem}>
                     <label>Organization</label>
-                    <input
-                      className={styles.inputField}
-                      value={editFields.organization}
-                      onChange={(e) => setEditFields({ ...editFields, organization: e.target.value })}
-                      placeholder="Church or ministry name"
-                    />
+                    <div className={styles.inputField} style={{ background: "#f5f5f5", color: "#666", cursor: "default" }}>
+                      {orgName || editFields.organization || "—"}
+                    </div>
                   </div>
                 </div>
                 <div className={styles.bioSection}>
@@ -248,7 +248,7 @@ export default function ProfilePage() {
                   </div>
                   <div className={styles.infoItem}>
                     <label>Organization</label>
-                    <span>{backendUser?.organization || "—"}</span>
+                    <span>{orgName || backendUser?.organization || "—"}</span>
                   </div>
                 </div>
                 <div className={styles.bioSection}>
