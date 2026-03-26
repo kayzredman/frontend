@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, type JSX } from "react";
 import { useAuth, useUser, useClerk, useOrganization } from "@clerk/nextjs";
+import { FaInstagram, FaFacebookF, FaXTwitter, FaYoutube, FaWhatsapp } from "react-icons/fa6";
 import styles from "./settings.module.css";
 
 type BackendUser = {
@@ -52,10 +53,11 @@ const TAB_ICONS: Record<Tab, JSX.Element> = {
 };
 
 const PLATFORMS = [
-  { name: "Instagram", icon: "📷", color: "#E1306C", bg: "#fde8ef" },
-  { name: "Facebook", icon: "📘", color: "#1877F2", bg: "#e8f0fe" },
-  { name: "X (Twitter)", icon: "𝕏", color: "#181b20", bg: "#f3f4f6" },
-  { name: "YouTube", icon: "▶", color: "#FF0000", bg: "#fee2e2" },
+  { name: "Instagram", icon: <FaInstagram />, color: "#E1306C", bg: "#fde8ef" },
+  { name: "Facebook", icon: <FaFacebookF />, color: "#1877F2", bg: "#e8f0fe" },
+  { name: "X (Twitter)", icon: <FaXTwitter />, color: "#181b20", bg: "#f3f4f6" },
+  { name: "YouTube", icon: <FaYoutube />, color: "#FF0000", bg: "#fee2e2" },
+  { name: "WhatsApp", icon: <FaWhatsapp />, color: "#25D366", bg: "#e8faf0" },
 ];
 
 const PLAN = {
@@ -102,13 +104,11 @@ export default function SettingsPage() {
     push: false, weeklyReport: true,
   });
 
-  // Platform connections (mock)
-  const [connections, setConnections] = useState<Record<string, { connected: boolean; handle: string }>>({
-    Instagram: { connected: true, handle: "@faithchurch" },
-    Facebook: { connected: true, handle: "Faith Church Community" },
-    "X (Twitter)": { connected: true, handle: "@faithchurchorg" },
-    YouTube: { connected: false, handle: "" },
-  });
+  // Platform connections (from backend)
+  const [connections, setConnections] = useState<Record<string, { connected: boolean; handle: string }>>({});
+  const [platformLoading, setPlatformLoading] = useState<string | null>(null);
+  const [whatsappNumber, setWhatsappNumber] = useState("");
+  const [showWhatsappInput, setShowWhatsappInput] = useState(false);
 
   // Team / Org state
   const { organization, membership } = useOrganization();
@@ -225,15 +225,101 @@ export default function SettingsPage() {
     setEditMode(false);
   };
 
-  const handleTogglePlatform = (name: string) => {
-    setConnections((prev) => ({
-      ...prev,
-      [name]: {
-        ...prev[name],
-        connected: !prev[name].connected,
-        handle: prev[name].connected ? "" : prev[name].handle || "@connected",
-      },
-    }));
+  // ── Platform connection logic ──────────────────────────
+  const loadPlatformData = useCallback(async () => {
+    if (!organization) return;
+    try {
+      const token = await getToken();
+      const res = await fetch(`/api/platforms/${organization.id}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) return;
+      const data = await res.json();
+      const map: Record<string, { connected: boolean; handle: string }> = {};
+      for (const conn of data) {
+        map[conn.platform] = { connected: conn.connected, handle: conn.handle || "" };
+      }
+      setConnections(map);
+    } catch {
+      // silently fail
+    }
+  }, [organization, getToken]);
+
+  useEffect(() => {
+    if (tab === "Platforms" && organization) loadPlatformData();
+  }, [tab, organization, loadPlatformData]);
+
+  const handleConnectPlatform = async (name: string) => {
+    if (!organization) return;
+    setPlatformLoading(name);
+    try {
+      const token = await getToken();
+
+      if (name === "WhatsApp") {
+        if (!showWhatsappInput) {
+          setShowWhatsappInput(true);
+          setPlatformLoading(null);
+          return;
+        }
+        if (!whatsappNumber.replace(/[^0-9]/g, "").length) {
+          showToast("error", "Please enter a valid WhatsApp number");
+          setPlatformLoading(null);
+          return;
+        }
+        const res = await fetch(`/api/platforms/${organization.id}/connect`, {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ platform: "WhatsApp", phoneNumber: whatsappNumber }),
+        });
+        if (!res.ok) throw new Error("Failed to connect WhatsApp");
+        showToast("success", "WhatsApp connected!");
+        setShowWhatsappInput(false);
+        setWhatsappNumber("");
+        await loadPlatformData();
+        setPlatformLoading(null);
+        return;
+      }
+
+      // OAuth platforms: get the auth URL and redirect
+      const res = await fetch(`/api/platforms/${organization.id}/connect`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ platform: name }),
+      });
+      if (!res.ok) throw new Error("Failed to start OAuth flow");
+      const data = await res.json();
+      if (data.authUrl) {
+        window.location.href = data.authUrl;
+        return;
+      }
+    } catch {
+      showToast("error", `Failed to connect ${name}`);
+    }
+    setPlatformLoading(null);
+  };
+
+  const handleDisconnectPlatform = async (name: string) => {
+    if (!organization) return;
+    setPlatformLoading(name);
+    try {
+      const token = await getToken();
+      const res = await fetch(`/api/platforms/${organization.id}/${encodeURIComponent(name)}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) throw new Error("Failed to disconnect");
+      showToast("success", `${name} disconnected`);
+      await loadPlatformData();
+    } catch {
+      showToast("error", `Failed to disconnect ${name}`);
+    }
+    setPlatformLoading(null);
   };
 
   // ── Loading & error states ─────────────────────────────
@@ -620,6 +706,7 @@ export default function SettingsPage() {
 
             {PLATFORMS.map((p) => {
               const conn = connections[p.name];
+              const isLoading = platformLoading === p.name;
               return (
                 <div key={p.name} className={styles.platformItem}>
                   <div
@@ -631,8 +718,41 @@ export default function SettingsPage() {
                   <div className={styles.platformInfo}>
                     <div className={styles.platformName}>{p.name}</div>
                     <div className={styles.platformHandle}>
-                      {conn?.connected ? `Connected as ${conn.handle}` : "Not connected"}
+                      {conn?.connected
+                        ? `Connected as ${conn.handle}`
+                        : p.name === "WhatsApp" && showWhatsappInput
+                          ? "Enter your WhatsApp Business number"
+                          : "Not connected"}
                     </div>
+                    {/* WhatsApp phone input */}
+                    {p.name === "WhatsApp" && showWhatsappInput && !conn?.connected && (
+                      <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
+                        <input
+                          type="tel"
+                          placeholder="+1 234 567 8900"
+                          value={whatsappNumber}
+                          onChange={(e) => setWhatsappNumber(e.target.value)}
+                          style={{
+                            padding: "8px 12px", borderRadius: 8,
+                            border: "1.5px solid #e2e8f0", fontSize: "0.88rem",
+                            width: 200,
+                          }}
+                        />
+                        <button
+                          className={styles.btnConnect}
+                          disabled={isLoading}
+                          onClick={() => handleConnectPlatform("WhatsApp")}
+                        >
+                          {isLoading ? "Connecting..." : "Verify"}
+                        </button>
+                        <button
+                          className={styles.btnDisconnect}
+                          onClick={() => { setShowWhatsappInput(false); setWhatsappNumber(""); }}
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    )}
                   </div>
                   <div className={styles.platformStatus}>
                     {conn?.connected ? (
@@ -640,20 +760,26 @@ export default function SettingsPage() {
                         <span className={`${styles.statusBadge} ${styles.statusConnected}`}>
                           ✓ Connected
                         </span>
-                        <button
-                          className={styles.btnDisconnect}
-                          onClick={() => handleTogglePlatform(p.name)}
-                        >
-                          Disconnect
-                        </button>
+                        {isAdmin && (
+                          <button
+                            className={styles.btnDisconnect}
+                            disabled={isLoading}
+                            onClick={() => handleDisconnectPlatform(p.name)}
+                          >
+                            {isLoading ? "..." : "Disconnect"}
+                          </button>
+                        )}
                       </>
                     ) : (
-                      <button
-                        className={styles.btnConnect}
-                        onClick={() => handleTogglePlatform(p.name)}
-                      >
-                        Connect
-                      </button>
+                      !(p.name === "WhatsApp" && showWhatsappInput) && isAdmin && (
+                        <button
+                          className={styles.btnConnect}
+                          disabled={isLoading}
+                          onClick={() => handleConnectPlatform(p.name)}
+                        >
+                          {isLoading ? "Connecting..." : "Connect"}
+                        </button>
+                      )
                     )}
                   </div>
                 </div>
