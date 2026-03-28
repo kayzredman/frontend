@@ -107,7 +107,9 @@ export default function SettingsPage() {
   // Platform connections (from backend)
   const [connections, setConnections] = useState<Record<string, { connected: boolean; handle: string }>>({});
   const [platformLoading, setPlatformLoading] = useState<string | null>(null);
-  const [whatsappNumber, setWhatsappNumber] = useState("");
+  const [whatsappPhoneNumberId, setWhatsappPhoneNumberId] = useState("");
+  const [whatsappAccessToken, setWhatsappAccessToken] = useState("");
+  const [whatsappDisplayPhone, setWhatsappDisplayPhone] = useState("");
   const [showWhatsappInput, setShowWhatsappInput] = useState(false);
 
   // Team / Org state
@@ -261,8 +263,8 @@ export default function SettingsPage() {
           setPlatformLoading(null);
           return;
         }
-        if (!whatsappNumber.replace(/[^0-9]/g, "").length) {
-          showToast("error", "Please enter a valid WhatsApp number");
+        if (!whatsappPhoneNumberId.trim() || !whatsappAccessToken.trim()) {
+          showToast("error", "Phone Number ID and Access Token are required");
           setPlatformLoading(null);
           return;
         }
@@ -272,12 +274,22 @@ export default function SettingsPage() {
             Authorization: `Bearer ${token}`,
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({ platform: "WhatsApp", phoneNumber: whatsappNumber }),
+          body: JSON.stringify({
+            platform: "WhatsApp",
+            phoneNumberId: whatsappPhoneNumberId.trim(),
+            accessToken: whatsappAccessToken.trim(),
+            phoneNumber: whatsappDisplayPhone.trim() || undefined,
+          }),
         });
-        if (!res.ok) throw new Error("Failed to connect WhatsApp");
-        showToast("success", "WhatsApp connected!");
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}));
+          throw new Error(err.message || "Failed to connect WhatsApp");
+        }
+        showToast("success", "WhatsApp Business connected!");
         setShowWhatsappInput(false);
-        setWhatsappNumber("");
+        setWhatsappPhoneNumberId("");
+        setWhatsappAccessToken("");
+        setWhatsappDisplayPhone("");
         await loadPlatformData();
         setPlatformLoading(null);
         return;
@@ -721,36 +733,63 @@ export default function SettingsPage() {
                       {conn?.connected
                         ? `Connected as ${conn.handle}`
                         : p.name === "WhatsApp" && showWhatsappInput
-                          ? "Enter your WhatsApp Business number"
+                          ? "Enter your WhatsApp Business API credentials"
                           : "Not connected"}
                     </div>
-                    {/* WhatsApp phone input */}
+                    {/* WhatsApp Business API input */}
                     {p.name === "WhatsApp" && showWhatsappInput && !conn?.connected && (
-                      <div style={{ display: "flex", gap: 8, marginTop: 8 }}>
+                      <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: 8, maxWidth: 420 }}>
+                        <p style={{ fontSize: "0.8rem", color: "#64748b", margin: 0 }}>
+                          Get these from <a href="https://business.facebook.com/latest/whatsapp_manager/phone_numbers" target="_blank" rel="noreferrer" style={{ color: "#25D366" }}>Meta Business Suite → WhatsApp Manager</a>
+                        </p>
                         <input
-                          type="tel"
-                          placeholder="+1 234 567 8900"
-                          value={whatsappNumber}
-                          onChange={(e) => setWhatsappNumber(e.target.value)}
+                          type="text"
+                          placeholder="Phone Number ID (e.g. 123456789012345)"
+                          value={whatsappPhoneNumberId}
+                          onChange={(e) => setWhatsappPhoneNumberId(e.target.value)}
                           style={{
                             padding: "8px 12px", borderRadius: 8,
                             border: "1.5px solid #e2e8f0", fontSize: "0.88rem",
-                            width: 200,
+                            width: "100%",
                           }}
                         />
-                        <button
-                          className={styles.btnConnect}
-                          disabled={isLoading}
-                          onClick={() => handleConnectPlatform("WhatsApp")}
-                        >
-                          {isLoading ? "Connecting..." : "Verify"}
-                        </button>
-                        <button
-                          className={styles.btnDisconnect}
-                          onClick={() => { setShowWhatsappInput(false); setWhatsappNumber(""); }}
-                        >
-                          Cancel
-                        </button>
+                        <input
+                          type="password"
+                          placeholder="Permanent Access Token"
+                          value={whatsappAccessToken}
+                          onChange={(e) => setWhatsappAccessToken(e.target.value)}
+                          style={{
+                            padding: "8px 12px", borderRadius: 8,
+                            border: "1.5px solid #e2e8f0", fontSize: "0.88rem",
+                            width: "100%",
+                          }}
+                        />
+                        <input
+                          type="tel"
+                          placeholder="Display phone (optional, e.g. +1 234 567 8900)"
+                          value={whatsappDisplayPhone}
+                          onChange={(e) => setWhatsappDisplayPhone(e.target.value)}
+                          style={{
+                            padding: "8px 12px", borderRadius: 8,
+                            border: "1.5px solid #e2e8f0", fontSize: "0.88rem",
+                            width: "100%",
+                          }}
+                        />
+                        <div style={{ display: "flex", gap: 8 }}>
+                          <button
+                            className={styles.btnConnect}
+                            disabled={isLoading}
+                            onClick={() => handleConnectPlatform("WhatsApp")}
+                          >
+                            {isLoading ? "Verifying..." : "Verify & Connect"}
+                          </button>
+                          <button
+                            className={styles.btnDisconnect}
+                            onClick={() => { setShowWhatsappInput(false); setWhatsappPhoneNumberId(""); setWhatsappAccessToken(""); setWhatsappDisplayPhone(""); }}
+                          >
+                            Cancel
+                          </button>
+                        </div>
                       </div>
                     )}
                   </div>
